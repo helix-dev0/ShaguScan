@@ -7,6 +7,7 @@
 
 global.lua
 utils.lua
+widgets.lua
 settings.lua
 core.lua
 filter.lua
