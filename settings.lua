@@ -102,13 +102,13 @@ settings.CreateDropdown = function(parent, options, selectedValue)
   end)
   
   -- Function to get current value
-  dropdown.GetValue = function(self) return self.selectedValue end
+  dropdown.GetValue = function() return dropdown.selectedValue end
   
   -- Function to set value
-  dropdown.SetValue = function(self, value)
-    self.selectedValue = value
-    self.text:SetText(value)
-    if self.menu then self.menu:Hide() end
+  dropdown.SetValue = function(value)
+    dropdown.selectedValue = value
+    dropdown.text:SetText(value)
+    if dropdown.menu then dropdown.menu:Hide() end
   end
   
   return dropdown
@@ -182,7 +182,7 @@ settings.ShowDropdownMenu = function(dropdown)
     
     -- Click handler
     button:SetScript("OnClick", function()
-      dropdown:SetValue(this.option)
+      dropdown.SetValue(this.option)
     end)
     button.option = option
     
@@ -833,52 +833,82 @@ settings.CreateTestBar = function(config, caption)
   -- Merge config with defaults
   config = utils.MergeConfigDefaults(config)
   
-  -- Create or show existing test bar
-  local testBarName = "ShaguScanTestBar" .. caption
-  local existing = getglobal(testBarName)
-  if existing then
-    if existing:IsShown() then 
-      existing:Hide() 
-    else 
-      existing:Show() 
+  -- Find or create the actual scan window
+  local scanWindow = getglobal("ShaguScan" .. caption)
+  if not scanWindow then
+    -- Create the scan window if it doesn't exist
+    scanWindow = ShaguScan.ui.CreateRoot(UIParent, caption)
+    
+    -- Store reference to avoid config issues
+    ShaguScan_db.config[caption] = config
+    
+    -- Position and configure the scan window
+    scanWindow:SetPoint(config.anchor, UIParent, config.anchor, config.x, config.y)
+    scanWindow:SetWidth(config.width + 20)
+    scanWindow:SetHeight(config.height + 40)
+    scanWindow:SetScale(config.scale)
+    
+    -- Apply background styling
+    if config.background_alpha > 0 then
+      local backdrop = {
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        tile = true, tileSize = 16, 
+        insets = { left = 2, right = 2, top = 2, bottom = 2 }
+      }
+      
+      local borderBackdrop = utils.GetBorderBackdrop(config)
+      if borderBackdrop then
+        backdrop.edgeFile = borderBackdrop.edgeFile
+        backdrop.edgeSize = borderBackdrop.edgeSize
+        backdrop.insets = borderBackdrop.insets
+      end
+      
+      scanWindow:SetBackdrop(backdrop)
+      scanWindow:SetBackdropColor(config.background_color.r, config.background_color.g, config.background_color.b, config.background_alpha)
+      if borderBackdrop then
+        scanWindow:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
+      end
+    end
+    
+    -- Add frame effects if enabled
+    if config.frame_shadow then
+      utils.CreateFrameShadow(scanWindow, config)
+    end
+    if config.frame_glow then
+      utils.CreateFrameGlow(scanWindow, config)
+    end
+    
+    scanWindow:Show()
+  end
+  
+  -- Check if test bar already exists
+  local testBarName = "test_unit_preview"
+  local existingTestBar = nil
+  
+  -- Find existing test bar
+  local children = { scanWindow:GetChildren() }
+  for i = 1, table.getn(children) do
+    local child = children[i]
+    if child.isTestBar then
+      existingTestBar = child
+      break
+    end
+  end
+  
+  -- Toggle test bar
+  if existingTestBar then
+    if existingTestBar:IsShown() then
+      existingTestBar:Hide()
+    else
+      existingTestBar:Show()
     end
     return
   end
   
-  -- Create test bar container
-  local testFrame = CreateFrame("Frame", testBarName, UIParent)
-  testFrame:SetWidth(config.width + 20)
-  testFrame:SetHeight(config.height + 40)
-  testFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-  testFrame:SetFrameStrata("HIGH")
-  testFrame:EnableMouse(true)
-  testFrame:SetMovable(true)
-  testFrame:RegisterForDrag("LeftButton")
-  testFrame:SetScript("OnDragStart", function() this:StartMoving() end)
-  testFrame:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
-  
-  -- Background
-  testFrame:SetBackdrop(settings.backdrop)
-  testFrame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
-  testFrame:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
-  
-  -- Title
-  local title = testFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  title:SetPoint("TOP", testFrame, "TOP", 0, -8)
-  title:SetText("Test Bar - " .. caption)
-  title:SetTextColor(1, 1, 1, 1)
-  
-  -- Close button
-  local closeBtn = CreateFrame("Button", nil, testFrame, "UIPanelCloseButton")
-  closeBtn:SetPoint("TOPRIGHT", testFrame, "TOPRIGHT", -2, -2)
-  closeBtn:SetWidth(16)
-  closeBtn:SetHeight(16)
-  closeBtn:SetScript("OnClick", function() testFrame:Hide() end)
-  
-  -- Create test health bar using the same function as normal bars
-  local testGuid = "test_unit_" .. GetTime()
-  local testBar = ShaguScan.ui.CreateBar(testFrame, testGuid, config)
-  testBar:SetPoint("CENTER", testFrame, "CENTER", 0, -5)
+  -- Create a single test bar within the scan window
+  local testBar = ShaguScan.ui.CreateBar(scanWindow, testBarName, config)
+  testBar.isTestBar = true
+  testBar:SetPoint("TOP", scanWindow, "TOP", 0, -20)
   testBar:SetWidth(config.width)
   testBar:SetHeight(config.height)
   
@@ -886,48 +916,56 @@ settings.CreateTestBar = function(config, caption)
   testBar.test_mode = true
   testBar.test_health = 75
   testBar.test_max_health = 100
-  testBar.test_name = "Test Enemy"
+  testBar.test_name = "Test Enemy Player"
   testBar.test_level = 60
-  testBar.test_class = "WARRIOR"
-  testBar.test_reaction = 2 -- Hostile
+  testBar.test_classification = "normal"
   
-  -- Override the BarUpdate function for test mode
+  -- Override the update function to show test data
   local originalUpdate = testBar:GetScript("OnUpdate")
   testBar:SetScript("OnUpdate", function()
     if this.test_mode then
       -- Set test values
-      this.bar:SetMinMaxValues(0, this.test_max_health)
-      this.bar:SetValue(this.test_health)
-      
-      -- Set test colors
-      local hex, r, g, b, a = utils.GetBarColor("player", this.config) -- Use player as test
-      this.bar:SetStatusBarColor(r, g, b, a)
+      if this.bar then
+        this.bar:SetMinMaxValues(0, this.test_max_health)
+        this.bar:SetValue(this.test_health)
+        
+        -- Set test colors
+        local r, g, b, a = 0.8, 0.8, 0.8, 1
+        if config.bar_color_mode == "custom" then
+          r, g, b, a = config.bar_color_custom.r, config.bar_color_custom.g, config.bar_color_custom.b, config.bar_color_custom.a
+        elseif config.bar_color_mode == "reaction" then
+          r, g, b = 1, 0.2, 0.2 -- Red for hostile
+        end
+        this.bar:SetStatusBarColor(r, g, b, a)
+      end
       
       -- Set test text
-      local text = utils.FormatMainText("player", this.config.text_format, this.config)
-      if this.config.text_format == "level_name" then
-        text = "|cffff0000" .. this.test_level .. "|r " .. this.test_name
-      elseif this.config.text_format == "name_only" then
-        text = this.test_name
-      elseif this.config.text_format == "level_only" then
-        text = "|cffff0000" .. this.test_level .. "|r"
-      elseif this.config.text_format == "health_percent" then
-        text = floor(this.test_health / this.test_max_health * 100) .. "%"
-      elseif this.config.text_format == "health_current" then
-        text = this.test_health
+      if this.text then
+        local text = ""
+        if config.text_format == "level_name" then
+          text = "|cffff0000" .. this.test_level .. "|r " .. this.test_name
+        elseif config.text_format == "name_only" then
+          text = this.test_name
+        elseif config.text_format == "level_only" then
+          text = "|cffff0000" .. this.test_level .. "|r"
+        elseif config.text_format == "health_percent" then
+          text = floor(this.test_health / this.test_max_health * 100) .. "%"
+        elseif config.text_format == "health_current" then
+          text = this.test_health
+        end
+        this.text:SetText(text)
       end
-      this.text:SetText(text)
       
       -- Set test health text
-      if this.config.health_text_enabled and this.health_text then
+      if config.health_text_enabled and this.health_text then
         local health_text = ""
-        if this.config.health_text_format == "percent" then
+        if config.health_text_format == "percent" then
           health_text = floor(this.test_health / this.test_max_health * 100) .. "%"
-        elseif this.config.health_text_format == "current" then
+        elseif config.health_text_format == "current" then
           health_text = this.test_health
-        elseif this.config.health_text_format == "current_max" then
+        elseif config.health_text_format == "current_max" then
           health_text = this.test_health .. "/" .. this.test_max_health
-        elseif this.config.health_text_format == "deficit" then
+        elseif config.health_text_format == "deficit" then
           local deficit = this.test_max_health - this.test_health
           health_text = deficit > 0 and "-" .. deficit or ""
         end
@@ -935,12 +973,6 @@ settings.CreateTestBar = function(config, caption)
         this.health_text:Show()
       elseif this.health_text then
         this.health_text:Hide()
-      end
-      
-      -- Set test border color
-      if this.border then
-        local border_color = this.config.border_color
-        this.border:SetBackdropBorderColor(border_color.r, border_color.g, border_color.b, border_color.a)
       end
     else
       -- Use original update function if it exists
@@ -950,13 +982,7 @@ settings.CreateTestBar = function(config, caption)
     end
   end)
   
-  -- Instructions
-  local instructions = testFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  instructions:SetPoint("BOTTOM", testFrame, "BOTTOM", 0, 8)
-  instructions:SetText("|cffaaaaaaClick and drag to move • Close when done")
-  instructions:SetJustifyH("CENTER")
-  
-  testFrame:Show()
+  testBar:Show()
 end
 
 settings.OpenMainWindow = function()
