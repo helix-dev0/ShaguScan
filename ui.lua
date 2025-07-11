@@ -334,8 +334,10 @@ ui.CreateBar = function(parent, guid, config)
 end
 
 ui:SetAllPoints()
-ui:SetScript("OnUpdate", function()
-  if ( this.tick or 1) > GetTime() then return else this.tick = GetTime() + .5 end
+ui:SetScript("OnUpdate", function(elapsed)
+  this.elapsed = (this.elapsed or 0) + elapsed
+  if this.elapsed < 0.5 then return end
+  this.elapsed = 0
 
   -- remove old leftover frames
   for caption, root in pairs(ui.frames) do
@@ -358,8 +360,9 @@ ui:SetScript("OnUpdate", function()
     if root.lock then return end
 
     -- update position based on config
-    if not root.pos or root.pos ~= config.anchor..config.x..config.y..config.scale then
-      root.pos = config.anchor..config.x..config.y..config.scale
+    local posKey = config.anchor .. "_" .. config.x .. "_" .. config.y .. "_" .. config.scale
+    if not root.pos or root.pos ~= posKey then
+      root.pos = posKey
       root:ClearAllPoints()
       root:SetPoint(config.anchor, config.x, config.y)
       root:SetScale(config.scale)
@@ -385,11 +388,12 @@ ui:SetScript("OnUpdate", function()
     local width, height = config.width, config.height + title_size
     local x, y, count = 0, 0, 0
     for guid, time in pairs(ShaguScan.core.guids) do
-      -- apply filters
+      -- apply filters with short-circuiting
       local visible = true
       for name, args in pairs(root.filter) do
-        if filter[name] then
-          visible = visible and filter[name](guid, args)
+        if filter[name] and not filter[name](guid, args) then
+          visible = false
+          break -- Exit immediately on first failed filter
         end
       end
 
@@ -417,17 +421,19 @@ ui:SetScript("OnUpdate", function()
         end
 
         -- update position if required
-        if not root.frames[guid].pos or root.frames[guid].pos ~= x..-y then
+        local framePos = x .. "_" .. (-y)
+        if not root.frames[guid].pos or root.frames[guid].pos ~= framePos then
           root.frames[guid]:ClearAllPoints()
           root.frames[guid]:SetPoint("TOPLEFT", root, "TOPLEFT", x, -y)
-          root.frames[guid].pos = x..-y
+          root.frames[guid].pos = framePos
         end
 
         -- update sizes if required
-        if not root.frames[guid].sizes or root.frames[guid].sizes ~= config.width..config.height then
+        local sizeKey = config.width .. "_" .. config.height
+        if not root.frames[guid].sizes or root.frames[guid].sizes ~= sizeKey then
           root.frames[guid]:SetWidth(config.width)
           root.frames[guid]:SetHeight(config.height)
-          root.frames[guid].sizes = config.width..config.height
+          root.frames[guid].sizes = sizeKey
         end
 
         root.frames[guid]:Show()

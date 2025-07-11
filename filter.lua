@@ -3,259 +3,247 @@ if ShaguScan.disabled then return end
 local filter = { }
 
 filter.player = function(unit)
-  return UnitIsPlayer(unit) and true or false
+  return UnitIsPlayer(unit)
 end
 
 filter.npc = function(unit)
-  return not UnitIsPlayer(unit) and true or false
+  return not UnitIsPlayer(unit)
 end
 
 filter.infight = function(unit)
-  return UnitAffectingCombat(unit) and true or false
+  return UnitAffectingCombat(unit)
 end
 
 filter.dead = function(unit)
-  return UnitIsDead(unit) and true or false
+  return UnitIsDead(unit)
 end
 
 filter.alive = function(unit)
-  return not UnitIsDead(unit) and true or false
+  return not UnitIsDead(unit)
 end
 
 filter.horde = function(unit)
-  return UnitFactionGroup(unit) == "Horde" and true or false
+  return UnitFactionGroup(unit) == "Horde"
 end
 
 filter.alliance = function(unit)
-  return UnitFactionGroup(unit) == "Alliance" and true or false
+  return UnitFactionGroup(unit) == "Alliance"
 end
 
 filter.hardcore = function(unit)
-  return string.find((UnitPVPName(unit) or ""), "Still Alive") and true or false
+  local pvpName = UnitPVPName(unit)
+  return pvpName and string.find(pvpName, "Still Alive")
 end
 
 filter.pve = function(unit)
-  return not UnitIsPVP(unit) and true or false
+  return not UnitIsPVP(unit)
 end
 
 filter.pvp = function(unit)
-  return UnitIsPVP(unit) and true or false
+  return UnitIsPVP(unit)
 end
 
 filter.icon = function(unit)
-  return GetRaidTargetIndex(unit) and true or false
+  return GetRaidTargetIndex(unit) ~= nil
 end
 
 filter.normal = function(unit)
-  local elite = UnitClassification(unit)
-  return elite == "normal" and true or false
+  return UnitClassification(unit) == "normal"
 end
 
 filter.elite = function(unit)
   local elite = UnitClassification(unit)
-  return (elite == "elite" or elite == "rareelite") and true or false
+  return elite == "elite" or elite == "rareelite"
 end
 
 filter.rare = function(unit)
   local elite = UnitClassification(unit)
-  return (elite == "rare" or elite == "rareelite") and true or false
+  return elite == "rare" or elite == "rareelite"
 end
 
 filter.rareelite = function(unit)
-  local elite = UnitClassification(unit)
-  return elite == "rareelite" and true or false
+  return UnitClassification(unit) == "rareelite"
 end
 
 filter.worldboss = function(unit)
-  local elite = UnitClassification(unit)
-  return elite == "worldboss" and true or false
+  return UnitClassification(unit) == "worldboss"
 end
 
 filter.hostile = function(unit)
-  return UnitIsEnemy("player", unit) and true or false
+  return UnitIsEnemy("player", unit)
 end
 
 filter.neutral = function(unit)
-  return not UnitIsEnemy("player", unit) and not UnitIsFriend("player", unit) and true or false
+  return not UnitIsEnemy("player", unit) and not UnitIsFriend("player", unit)
 end
 
 filter.friendly = function(unit)
-  return UnitIsFriend("player", unit) and true or false
+  return UnitIsFriend("player", unit)
 end
 
 filter.attack = function(unit)
-  return UnitCanAttack("player", unit) and true or false
+  return UnitCanAttack("player", unit)
 end
 
 filter.noattack = function(unit)
-  return not UnitCanAttack("player", unit) and true or false
+  return not UnitCanAttack("player", unit)
 end
 
 filter.pet = function(unit)
-  local player = UnitIsPlayer(unit) and true or false
-  local controlled = UnitPlayerControlled(unit) and true or false
-  local pet = not player and controlled and true or false
-  return pet and true or false
+  local isPlayer = UnitIsPlayer(unit)
+  local isControlled = UnitPlayerControlled(unit)
+  return not isPlayer and isControlled
 end
 
 filter.nopet = function(unit)
-  local player = UnitIsPlayer(unit) and true or false
-  local controlled = UnitPlayerControlled(unit) and true or false
-  local pet = not player and controlled and true or false
-  return not pet and true or false
+  local isPlayer = UnitIsPlayer(unit)
+  local isControlled = UnitPlayerControlled(unit)
+  return isPlayer or not isControlled
 end
 
 filter.human = function(unit)
   local _, race = UnitRace(unit)
-  return race == "Human" and true or false
+  return race == "Human"
 end
 
 filter.orc = function(unit)
   local _, race = UnitRace(unit)
-  return race == "Orc" and true or false
+  return race == "Orc"
 end
 
 filter.dwarf = function(unit)
   local _, race = UnitRace(unit)
-  return race == "Dwarf" and true or false
+  return race == "Dwarf"
 end
 
 filter.nightelf = function(unit)
   local _, race = UnitRace(unit)
-  return race == "NightElf" and true or false
+  return race == "NightElf"
 end
 
 filter.undead = function(unit)
   local _, race = UnitRace(unit)
-  return race == "Scourge" and true or false
+  return race == "Scourge"
 end
 
 filter.tauren = function(unit)
   local _, race = UnitRace(unit)
-  return race == "Tauren" and true or false
+  return race == "Tauren"
 end
 
 filter.gnome = function(unit)
   local _, race = UnitRace(unit)
-  return race == "Gnome" and true or false
+  return race == "Gnome"
 end
 
 filter.troll = function(unit)
   local _, race = UnitRace(unit)
-  return race == "Troll" and true or false
+  return race == "Troll"
 end
 
 filter.goblin = function(unit)
   local _, race = UnitRace(unit)
-  return race == "Goblin" and true or false
+  return race == "Goblin"
 end
 
 filter.highelf = function(unit)
   local _, race = UnitRace(unit)
-  return race == "BloodElf" and true or false
+  return race == "BloodElf"
 end
 
 filter.warlock = function(unit)
+  if not UnitIsPlayer(unit) then return false end
   local _, class = UnitClass(unit)
-  local player = UnitIsPlayer(unit)
-
-  return player and class == "WARLOCK" and true or false
+  return class == "WARLOCK"
 end
 
 filter.warrior = function(unit)
+  if not UnitIsPlayer(unit) then return false end
   local _, class = UnitClass(unit)
-  local player = UnitIsPlayer(unit)
-
-  return player and class == "WARRIOR" and true or false
+  return class == "WARRIOR"
 end
 
 filter.hunter = function(unit)
+  if not UnitIsPlayer(unit) then return false end
   local _, class = UnitClass(unit)
-  local player = UnitIsPlayer(unit)
-
-  return player and class == "HUNTER" and true or false
+  return class == "HUNTER"
 end
 
 filter.mage = function(unit)
+  if not UnitIsPlayer(unit) then return false end
   local _, class = UnitClass(unit)
-  local player = UnitIsPlayer(unit)
-
-  return player and class == "MAGE" and true or false
+  return class == "MAGE"
 end
 
 filter.priest = function(unit)
+  if not UnitIsPlayer(unit) then return false end
   local _, class = UnitClass(unit)
-  local player = UnitIsPlayer(unit)
-
-  return player and class == "PRIEST" and true or false
+  return class == "PRIEST"
 end
 
 filter.druid = function(unit)
+  if not UnitIsPlayer(unit) then return false end
   local _, class = UnitClass(unit)
-  local player = UnitIsPlayer(unit)
-
-  return player and class == "DRUID" and true or false
+  return class == "DRUID"
 end
 
 filter.paladin = function(unit)
+  if not UnitIsPlayer(unit) then return false end
   local _, class = UnitClass(unit)
-  local player = UnitIsPlayer(unit)
-
-  return player and class == "PALADIN" and true or false
+  return class == "PALADIN"
 end
 
 filter.shaman = function(unit)
+  if not UnitIsPlayer(unit) then return false end
   local _, class = UnitClass(unit)
-  local player = UnitIsPlayer(unit)
-
-  return player and class == "SHAMAN" and true or false
+  return class == "SHAMAN"
 end
 
 filter.rogue = function(unit)
+  if not UnitIsPlayer(unit) then return false end
   local _, class = UnitClass(unit)
-  local player = UnitIsPlayer(unit)
-
-  return player and class == "ROGUE" and true or false
+  return class == "ROGUE"
 end
 
 filter.aggro = function(unit)
-  return UnitExists(unit .. "target") and UnitIsUnit(unit .. "target", "player") and true or false
+  local target = unit .. "target"
+  return UnitExists(target) and UnitIsUnit(target, "player")
 end
 
 filter.noaggro = function(unit)
-  return not UnitExists(unit .. "target") or not UnitIsUnit(unit .. "target", "player") and true or false
+  local target = unit .. "target"
+  return not UnitExists(target) or not UnitIsUnit(target, "player")
 end
 
 filter.pfquest = function(unit)
-  return pfQuest and pfMap and UnitName(unit) and pfMap.tooltips[UnitName(unit)] and true or false
+  if not (pfQuest and pfMap) then return false end
+  local name = UnitName(unit)
+  return name and pfMap.tooltips[name]
 end
 
 filter.range = function(unit)
-  return CheckInteractDistance(unit, 4) and true or false
+  return CheckInteractDistance(unit, 4)
 end
 
-local level = nil
 filter.level = function(unit, args)
-  level = tonumber(args)
-  return level and UnitLevel(unit) == level and true or false
+  local level = tonumber(args)
+  return level and UnitLevel(unit) == level
 end
 
-local level = nil
 filter.minlevel = function(unit, args)
-  level = tonumber(args)
-  return level and UnitLevel(unit) >= level and true or false
+  local level = tonumber(args)
+  return level and UnitLevel(unit) >= level
 end
 
-local level = nil
 filter.maxlevel = function(unit, args)
-  level = tonumber(args)
-  return level and UnitLevel(unit) <= level and true or false
+  local level = tonumber(args)
+  return level and UnitLevel(unit) <= level
 end
 
 filter.name = function(unit, name)
   name = strlower(name or "")
   unit = strlower(UnitName(unit) or "")
-  return string.find(unit, name) and true or false
+  return string.find(unit, name) ~= nil
 end
 
 ShaguScan.filter = filter
