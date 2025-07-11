@@ -76,6 +76,12 @@ settings.ShowTooltip = function(parent, strings)
 end
 
 settings.OpenConfig = function(caption)
+  -- Safety check for nil caption
+  if not caption or caption == "" then
+    DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Shagu|cffffffffScan:|cffffaaaa Error: Invalid window name!")
+    return
+  end
+  
   -- Toggle Existing Dialog
   local existing = getglobal("ShaguScanConfigDialog"..caption)
   if existing then
@@ -997,8 +1003,9 @@ settings.RefreshWindowList = function(panel)
     button.edit:SetText("Edit")
     button.edit:SetFont(STANDARD_TEXT_FONT, 8)
     button.edit:SetScript("OnClick", function()
-      settings.OpenConfig(caption)
+      settings.OpenConfig(this.caption)
     end)
+    button.edit.caption = caption
 
     -- Delete button
     button.delete = CreateFrame("Button", nil, button, "GameMenuButtonTemplate")
@@ -1008,8 +1015,9 @@ settings.RefreshWindowList = function(panel)
     button.delete:SetText("Delete")
     button.delete:SetFont(STANDARD_TEXT_FONT, 8)
     button.delete:SetScript("OnClick", function()
-      settings.DeleteScanWindow(caption, panel)
+      settings.DeleteScanWindow(this.caption, panel)
     end)
+    button.delete.caption = caption
 
     table.insert(panel.windowButtons, button)
     yOffset = yOffset - 35
