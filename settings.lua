@@ -126,7 +126,7 @@ settings.ShowDropdownMenu = function(dropdown)
   
   -- Calculate menu dimensions
   local menuWidth = math.max(dropdown:GetWidth(), 100)
-  local menuHeight = math.min(#dropdown.options * 18 + 4, 200) -- Max 200 pixels high
+  local menuHeight = math.min(table.getn(dropdown.options) * 18 + 4, 200) -- Max 200 pixels high
   menu:SetWidth(menuWidth)
   menu:SetHeight(menuHeight)
   
@@ -161,7 +161,8 @@ settings.ShowDropdownMenu = function(dropdown)
   menu:EnableMouse(true)
   
   -- Create option buttons
-  for i, option in ipairs(dropdown.options) do
+  for i = 1, table.getn(dropdown.options) do
+    local option = dropdown.options[i]
     local button = CreateFrame("Button", nil, menu)
     button:SetPoint("TOPLEFT", menu, "TOPLEFT", 2, -(i-1)*18 - 2)
     button:SetWidth(menu:GetWidth() - 4)
