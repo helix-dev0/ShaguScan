@@ -186,9 +186,14 @@ settings.ShowDropdownMenu = function(dropdown)
     end)
     button.option = option
     
-    -- Hover effect
+    -- Hover effect with menu stability
     button:SetScript("OnEnter", function()
       this.text:SetTextColor(1, 1, 0, 1)
+      -- Cancel any pending auto-hide when hovering over buttons
+      if menu.leaveTime then
+        menu.leaveTime = nil
+        menu:SetScript("OnUpdate", nil)
+      end
     end)
     
     button:SetScript("OnLeave", function()
@@ -204,6 +209,49 @@ settings.ShowDropdownMenu = function(dropdown)
   dropdown.menu = menu
   menu:Show()
   
+  -- Add click-outside-to-close functionality
+  local function checkClickOutside()
+    local x, y = GetCursorPosition()
+    local scale = UIParent:GetEffectiveScale()
+    x, y = x / scale, y / scale
+    
+    -- Check if click is outside both dropdown and menu
+    local clickedDropdown = false
+    local clickedMenu = false
+    
+    -- Check dropdown bounds
+    local left, right, top, bottom = dropdown:GetLeft(), dropdown:GetRight(), dropdown:GetTop(), dropdown:GetBottom()
+    if left and right and top and bottom then
+      clickedDropdown = (x >= left and x <= right and y >= bottom and y <= top)
+    end
+    
+    -- Check menu bounds
+    left, right, top, bottom = menu:GetLeft(), menu:GetRight(), menu:GetTop(), menu:GetBottom()
+    if left and right and top and bottom then
+      clickedMenu = (x >= left and x <= right and y >= bottom and y <= top)
+    end
+    
+    -- Hide menu if clicked outside both
+    if not clickedDropdown and not clickedMenu then
+      menu:Hide()
+    end
+  end
+  
+  -- Set up click-outside detection
+  menu.clickFrame = CreateFrame("Frame", nil, UIParent)
+  menu.clickFrame:SetFrameStrata("BACKGROUND")
+  menu.clickFrame:SetAllPoints(UIParent)
+  menu.clickFrame:EnableMouse(true)
+  menu.clickFrame:SetScript("OnMouseDown", checkClickOutside)
+  
+  -- Clean up click frame when menu hides
+  menu:SetScript("OnHide", function()
+    if this.clickFrame then
+      this.clickFrame:Hide()
+      this.clickFrame = nil
+    end
+  end)
+  
   -- Hide menu when clicking elsewhere or pressing ESC
   menu:SetScript("OnKeyDown", function()
     if arg1 == "ESCAPE" then
@@ -217,25 +265,35 @@ settings.ShowDropdownMenu = function(dropdown)
     this:SetFocus()
   end)
   
-  -- Auto-hide after delay when mouse leaves both dropdown and menu
+  -- Auto-hide after longer delay when mouse leaves both dropdown and menu
   menu:SetScript("OnLeave", function()
     this.leaveTime = GetTime()
     this:SetScript("OnUpdate", function()
-      if this.leaveTime and GetTime() - this.leaveTime > 0.5 then
-        -- Check if mouse is over dropdown (fallback for older WoW versions)
-        local mouseOver = false
+      if this.leaveTime and GetTime() - this.leaveTime > 1.5 then -- Increased from 0.5 to 1.5 seconds
+        -- Check if mouse is over dropdown or menu (fallback for older WoW versions)
+        local mouseOverDropdown = false
+        local mouseOverMenu = false
+        
         if MouseIsOver then
-          mouseOver = MouseIsOver(dropdown)
+          mouseOverDropdown = MouseIsOver(dropdown)
+          mouseOverMenu = MouseIsOver(this)
         else
           -- Manual check for 1.12.1 compatibility
           local x, y = GetCursorPosition()
           local scale = UIParent:GetEffectiveScale()
           x, y = x / scale, y / scale
+          
+          -- Check dropdown bounds
           local left, right, top, bottom = dropdown:GetLeft(), dropdown:GetRight(), dropdown:GetTop(), dropdown:GetBottom()
-          mouseOver = (x >= left and x <= right and y >= bottom and y <= top)
+          mouseOverDropdown = (x >= left and x <= right and y >= bottom and y <= top)
+          
+          -- Check menu bounds
+          left, right, top, bottom = this:GetLeft(), this:GetRight(), this:GetTop(), this:GetBottom()
+          mouseOverMenu = (x >= left and x <= right and y >= bottom and y <= top)
         end
         
-        if not mouseOver then
+        -- Only hide if mouse is over neither dropdown nor menu
+        if not mouseOverDropdown and not mouseOverMenu then
           this:Hide()
         end
         this.leaveTime = nil
@@ -244,10 +302,18 @@ settings.ShowDropdownMenu = function(dropdown)
     end)
   end)
   
-  -- Cancel auto-hide if mouse returns
+  -- Cancel auto-hide if mouse returns to menu
   menu:SetScript("OnEnter", function()
     this.leaveTime = nil
     this:SetScript("OnUpdate", nil)
+  end)
+  
+  -- Also cancel auto-hide if mouse returns to dropdown
+  dropdown:SetScript("OnEnter", function()
+    if dropdown.menu and dropdown.menu.leaveTime then
+      dropdown.menu.leaveTime = nil
+      dropdown.menu:SetScript("OnUpdate", nil)
+    end
   end)
 end
 
