@@ -111,23 +111,33 @@ ui.BarUpdate = function()
   this.bar:SetMinMaxValues(0, UnitHealthMax(this.guid))
   this.bar:SetValue(UnitHealth(this.guid))
 
-  -- update health bar color
-  local hex, r, g, b, a = utils.GetUnitColor(this.guid)
+  -- update health bar color based on configuration
+  local hex, r, g, b, a = utils.GetBarColor(this.guid, this.config)
   this.bar:SetStatusBarColor(r, g, b, a)
 
-  -- update caption text
-  local level = utils.GetLevelString(this.guid)
-  local level_color = utils.GetLevelColor(this.guid)
-  local name = UnitName(this.guid)
-  this.text:SetText(level_color..level.."|r "..name)
+  -- update caption text based on configuration
+  local text = utils.FormatMainText(this.guid, this.config.text_format, this.config)
+  this.text:SetText(text)
+
+  -- update health text if enabled
+  if this.config.health_text_enabled and this.health_text then
+    local health_text = utils.FormatHealthText(this.guid, this.config.health_text_format)
+    this.health_text:SetText(health_text)
+    this.health_text:Show()
+  elseif this.health_text then
+    this.health_text:Hide()
+  end
 
   -- update health bar border
-  if this.hover then
-    this.border:SetBackdropBorderColor(1, 1, 1, 1)
-  elseif UnitAffectingCombat(this.guid) then
-    this.border:SetBackdropBorderColor(.8, .2, .2, 1)
-  else
-    this.border:SetBackdropBorderColor(.2, .2, .2, 1)
+  if this.border then
+    local border_color = this.config.border_color
+    if this.hover then
+      this.border:SetBackdropBorderColor(1, 1, 1, 1)
+    elseif UnitAffectingCombat(this.guid) then
+      this.border:SetBackdropBorderColor(.8, .2, .2, 1)
+    else
+      this.border:SetBackdropBorderColor(border_color.r, border_color.g, border_color.b, border_color.a)
+    end
   end
 
   -- show raid icon if existing
@@ -157,9 +167,10 @@ ui.BarEvent = function()
   CombatFeedback_OnCombatEvent(arg2, arg3, arg4, arg5)
 end
 
-ui.CreateBar = function(parent, guid)
+ui.CreateBar = function(parent, guid, config)
   local frame = CreateFrame("Button", nil, parent)
   frame.guid = guid
+  frame.config = config
 
   -- assign required events and scripts
   frame:RegisterEvent("UNIT_COMBAT")
@@ -171,7 +182,7 @@ ui.CreateBar = function(parent, guid)
 
   -- create health bar
   local bar = CreateFrame("StatusBar", nil, frame)
-  bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+  bar:SetStatusBarTexture(config.bar_texture)
   bar:SetStatusBarColor(1, .8, .2, 1)
   bar:SetMinMaxValues(0, 100)
   bar:SetValue(20)
@@ -180,11 +191,45 @@ ui.CreateBar = function(parent, guid)
 
   -- create caption text
   local text = frame.bar:CreateFontString(nil, "HIGH", "GameFontWhite")
-  text:SetPoint("TOPLEFT", bar, "TOPLEFT", 2, -2)
-  text:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", -2, 2)
-  text:SetFont(STANDARD_TEXT_FONT, 9, "THINOUTLINE")
-  text:SetJustifyH("LEFT")
+  text:SetFont(config.text_font, config.text_size, config.text_outline)
+  text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
+  
+  -- position text based on configuration
+  if config.text_position == "center" then
+    text:SetPoint("CENTER", bar, "CENTER", 0, 0)
+    text:SetJustifyH("CENTER")
+  elseif config.text_position == "right" then
+    text:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -2, -2)
+    text:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", -2, 2)
+    text:SetJustifyH("RIGHT")
+  else -- left (default)
+    text:SetPoint("TOPLEFT", bar, "TOPLEFT", 2, -2)
+    text:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 2, 2)
+    text:SetJustifyH("LEFT")
+  end
   frame.text = text
+
+  -- create health text if enabled
+  if config.health_text_enabled then
+    local health_text = frame.bar:CreateFontString(nil, "HIGH", "GameFontWhite")
+    health_text:SetFont(config.text_font, config.text_size, config.text_outline)
+    health_text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
+    
+    -- position health text based on configuration
+    if config.health_text_position == "center" then
+      health_text:SetPoint("CENTER", bar, "CENTER", 0, 0)
+      health_text:SetJustifyH("CENTER")
+    elseif config.health_text_position == "left" then
+      health_text:SetPoint("TOPLEFT", bar, "TOPLEFT", 2, -2)
+      health_text:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 2, 2)
+      health_text:SetJustifyH("LEFT")
+    else -- right (default)
+      health_text:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -2, -2)
+      health_text:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", -2, 2)
+      health_text:SetJustifyH("RIGHT")
+    end
+    frame.health_text = health_text
+  end
 
   -- create combat feedback text
   local feedback = bar:CreateFontString(guid.."feedback"..GetTime(), "OVERLAY", "NumberFontNormalHuge")
@@ -224,21 +269,33 @@ ui.CreateBar = function(parent, guid)
   target_right:Hide()
   frame.target_right = target_right
 
-  -- create frame backdrops
+  -- create frame backdrops based on configuration
   if pfUI and pfUI.uf then
     pfUI.api.CreateBackdrop(frame)
     frame.border = frame.backdrop
   else
+    -- set background
+    local bg_color = config.background_color
     frame:SetBackdrop(ui.background)
-    frame:SetBackdropColor(0, 0, 0, 1)
+    frame:SetBackdropColor(bg_color.r, bg_color.g, bg_color.b, config.background_alpha)
 
-    local border = CreateFrame("Frame", nil, frame.bar)
-    border:SetBackdrop(ui.border)
-    border:SetBackdropColor(.2, .2, .2, 1)
-    border:SetPoint("TOPLEFT", frame.bar, "TOPLEFT", -2,2)
-    border:SetPoint("BOTTOMRIGHT", frame.bar, "BOTTOMRIGHT", 2,-2)
-    frame.border = border
+    -- create border if not disabled
+    local border_backdrop = utils.GetBorderBackdrop(config)
+    if border_backdrop then
+      local border = CreateFrame("Frame", nil, frame.bar)
+      border:SetBackdrop(border_backdrop)
+      border:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
+      border:SetPoint("TOPLEFT", frame.bar, "TOPLEFT", -2, 2)
+      border:SetPoint("BOTTOMRIGHT", frame.bar, "BOTTOMRIGHT", 2, -2)
+      frame.border = border
+    end
   end
+
+  -- create frame shadow if enabled
+  frame.shadow = utils.CreateFrameShadow(frame, config)
+  
+  -- create frame glow if enabled
+  frame.glow = utils.CreateFrameGlow(frame, config)
 
   return frame
 end
@@ -257,8 +314,11 @@ ui:SetScript("OnUpdate", function()
 
   -- create ui frames based on config values
   for caption, config in pairs(ShaguScan_db.config) do
+    -- ensure config has all required fields for backward compatibility
+    config = utils.MergeConfigDefaults(config)
+    
     -- create root frame if not existing
-    ui.frames[caption] = ui.frames[caption] or ui:CreateRoot(caption)
+    ui.frames[caption] = ui.frames[caption] or ui.CreateRoot(UIParent, caption)
     local root = ui.frames[caption]
 
     -- skip if locked (due to moving)
@@ -312,7 +372,12 @@ ui:SetScript("OnUpdate", function()
         y = (count-1) * (config.height + config.spacing) + title_size
         height = math.max(y + config.height + config.spacing, height)
 
-        root.frames[guid] = root.frames[guid] or root:CreateBar(guid)
+        root.frames[guid] = root.frames[guid] or ui.CreateBar(root, guid, config)
+        
+        -- update frame config reference if it exists
+        if root.frames[guid] then
+          root.frames[guid].config = config
+        end
 
         -- update position if required
         if not root.frames[guid].pos or root.frames[guid].pos ~= x..-y then

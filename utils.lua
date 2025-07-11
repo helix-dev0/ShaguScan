@@ -173,4 +173,155 @@ utils.GetLevelString = function(unitstr)
   return level
 end
 
+utils.GetBarColor = function(unitstr, config)
+  if config.bar_color_mode == "custom" then
+    local c = config.bar_color_custom
+    return utils.rgbhex(c.r, c.g, c.b, c.a), c.r, c.g, c.b, c.a
+  elseif config.bar_color_mode == "class" then
+    return utils.GetUnitColor(unitstr)
+  else -- reaction mode (default)
+    return utils.GetReactionColor(unitstr)
+  end
+end
+
+utils.GetBorderBackdrop = function(config)
+  local backdrop = {
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    tile = true, tileSize = 16, edgeSize = 8,
+    insets = { left = 2, right = 2, top = 2, bottom = 2 }
+  }
+  
+  if config.border_style == "none" then
+    return nil
+  elseif config.border_style == "thin" then
+    backdrop.edgeSize = 4
+    backdrop.insets = { left = 1, right = 1, top = 1, bottom = 1 }
+  elseif config.border_style == "thick" then
+    backdrop.edgeSize = 12
+    backdrop.insets = { left = 3, right = 3, top = 3, bottom = 3 }
+  elseif config.border_style == "glow" then
+    -- Use regular border with larger size for glow effect (vanilla may not have glow texture)
+    backdrop.edgeSize = 16
+    backdrop.insets = { left = 4, right = 4, top = 4, bottom = 4 }
+  end
+  
+  return backdrop
+end
+
+utils.FormatHealthText = function(unitstr, format)
+  local current = UnitHealth(unitstr)
+  local max = UnitHealthMax(unitstr)
+  
+  if format == "percent" then
+    local percent = max > 0 and floor(current / max * 100) or 0
+    return percent .. "%"
+  elseif format == "current" then
+    return current
+  elseif format == "current_max" then
+    return current .. "/" .. max
+  elseif format == "deficit" then
+    local deficit = max - current
+    return deficit > 0 and "-" .. deficit or ""
+  end
+  
+  return ""
+end
+
+utils.FormatMainText = function(unitstr, format, config)
+  local level = utils.GetLevelString(unitstr)
+  local level_color = utils.GetLevelColor(unitstr)
+  local name = UnitName(unitstr)
+  
+  if format == "name_only" then
+    return name
+  elseif format == "level_only" then
+    return level_color .. level .. "|r"
+  elseif format == "health_percent" then
+    return utils.FormatHealthText(unitstr, "percent")
+  elseif format == "health_current" then
+    return utils.FormatHealthText(unitstr, "current")
+  else -- level_name (default)
+    return level_color .. level .. "|r " .. name
+  end
+end
+
+utils.CreateFrameShadow = function(frame, config)
+  if not config.frame_shadow then return end
+  
+  local shadow = CreateFrame("Frame", nil, frame)
+  shadow:SetFrameStrata("BACKGROUND")
+  shadow:SetFrameLevel(frame:GetFrameLevel() - 1)
+  shadow:SetPoint("TOPLEFT", frame, "TOPLEFT", -4, 4)
+  shadow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 4, -4)
+  
+  local texture = shadow:CreateTexture(nil, "BACKGROUND")
+  texture:SetAllPoints()
+  texture:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
+  texture:SetVertexColor(0, 0, 0, 0.8)
+  
+  return shadow
+end
+
+utils.CreateFrameGlow = function(frame, config)
+  if not config.frame_glow then return end
+  
+  local glow = CreateFrame("Frame", nil, frame)
+  glow:SetFrameStrata("BACKGROUND")
+  glow:SetFrameLevel(frame:GetFrameLevel() - 1)
+  glow:SetPoint("TOPLEFT", frame, "TOPLEFT", -8, 8)
+  glow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 8, -8)
+  
+  local texture = glow:CreateTexture(nil, "BACKGROUND")
+  texture:SetAllPoints()
+  texture:SetTexture("Interface\\Tooltips\\UI-Tooltip-Border-Glow")
+  texture:SetVertexColor(1, 1, 1, 0.3)
+  
+  return glow
+end
+
+utils.MergeConfigDefaults = function(config)
+  -- Ensure all new display options have defaults for backward compatibility
+  local defaults = {
+    bar_texture = "Interface\\TargetingFrame\\UI-StatusBar",
+    bar_color_mode = "reaction",
+    bar_color_custom = {r=1, g=0.8, b=0.2, a=1},
+    background_alpha = 0.8,
+    background_color = {r=0, g=0, b=0, a=1},
+    border_style = "default",
+    border_color = {r=0.2, g=0.2, b=0.2, a=1},
+    text_font = STANDARD_TEXT_FONT,
+    text_size = 9,
+    text_outline = "THINOUTLINE",
+    text_position = "left",
+    text_format = "level_name",
+    text_color = {r=1, g=1, b=1, a=1},
+    health_text_enabled = false,
+    health_text_position = "right",
+    health_text_format = "percent",
+    frame_shadow = false,
+    frame_glow = false
+  }
+  
+  for key, value in pairs(defaults) do
+    if config[key] == nil then
+      config[key] = value
+    end
+  end
+  
+  return config
+end
+
+utils.DeepCopy = function(orig)
+  local copy
+  if type(orig) == 'table' then
+    copy = {}
+    for orig_key, orig_value in pairs(orig) do
+      copy[orig_key] = utils.DeepCopy(orig_value)
+    end
+  else
+    copy = orig
+  end
+  return copy
+end
+
 ShaguScan.utils = utils
