@@ -1030,7 +1030,7 @@ end
 settings.CreateNewScanWindow = function()
   -- Create a simple dialog to get window name
   local dialog = CreateFrame("Frame", "ShaguScanNewWindowDialog", UIParent)
-  dialog:SetFrameStrata("DIALOG")
+  dialog:SetFrameStrata("FULLSCREEN")
   dialog:SetPoint("CENTER", 0, 0)
   dialog:SetWidth(300)
   dialog:SetHeight(120)
@@ -1102,7 +1102,7 @@ end
 settings.DeleteScanWindow = function(caption, panel)
   -- Confirmation dialog
   local dialog = CreateFrame("Frame", "ShaguScanDeleteDialog", UIParent)
-  dialog:SetFrameStrata("DIALOG")
+  dialog:SetFrameStrata("FULLSCREEN")
   dialog:SetPoint("CENTER", 0, 0)
   dialog:SetWidth(300)
   dialog:SetHeight(100)
