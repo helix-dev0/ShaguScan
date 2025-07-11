@@ -63,6 +63,193 @@ settings.CreateTextBox = function(parent, text)
   return textbox
 end
 
+settings.CreateDropdown = function(parent, options, selectedValue)
+  local dropdown = CreateFrame("Frame", nil, parent)
+  dropdown:SetHeight(18)
+  dropdown:SetBackdrop(settings.textborder)
+  dropdown:SetBackdropColor(.1,.1,.1,1)
+  dropdown:SetBackdropBorderColor(.2,.2,.2,1)
+  dropdown:EnableMouse(true)
+  
+  -- Current value display
+  dropdown.text = dropdown:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  dropdown.text:SetPoint("LEFT", dropdown, "LEFT", 5, 0)
+  dropdown.text:SetFont(STANDARD_TEXT_FONT, 9)
+  dropdown.text:SetTextColor(1, .8, .2, 1)
+  dropdown.text:SetText(selectedValue or options[1])
+  
+  -- Dropdown arrow
+  dropdown.arrow = dropdown:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  dropdown.arrow:SetPoint("RIGHT", dropdown, "RIGHT", -5, 0)
+  dropdown.arrow:SetFont(STANDARD_TEXT_FONT, 9)
+  dropdown.arrow:SetTextColor(0.7, 0.7, 0.7, 1)
+  dropdown.arrow:SetText("▼")
+  
+  -- Store options and current value
+  dropdown.options = options
+  dropdown.selectedValue = selectedValue or options[1]
+  
+  -- Add tooltip support
+  dropdown.ShowTooltip = settings.ShowTooltip
+  
+  -- Click handler to show/hide menu
+  dropdown:SetScript("OnMouseDown", function()
+    if this.menu and this.menu:IsVisible() then
+      this.menu:Hide()
+    else
+      settings.ShowDropdownMenu(this)
+    end
+  end)
+  
+  -- Function to get current value
+  dropdown.GetValue = function(self) return self.selectedValue end
+  
+  -- Function to set value
+  dropdown.SetValue = function(self, value)
+    self.selectedValue = value
+    self.text:SetText(value)
+    if self.menu then self.menu:Hide() end
+  end
+  
+  return dropdown
+end
+
+settings.ShowDropdownMenu = function(dropdown)
+  -- Hide existing menu if any
+  if dropdown.menu then
+    dropdown.menu:Hide()
+  end
+  
+  -- Create menu frame
+  local menu = CreateFrame("Frame", nil, UIParent)
+  menu:SetFrameStrata("TOOLTIP")
+  
+  -- Calculate menu dimensions
+  local menuWidth = math.max(dropdown:GetWidth(), 100)
+  local menuHeight = math.min(#dropdown.options * 18 + 4, 200) -- Max 200 pixels high
+  menu:SetWidth(menuWidth)
+  menu:SetHeight(menuHeight)
+  
+  -- Position menu with screen boundary checks
+  local dropdownLeft = dropdown:GetLeft()
+  local dropdownBottom = dropdown:GetBottom()
+  local screenWidth = GetScreenWidth()
+  local screenHeight = GetScreenHeight()
+  
+  -- Check if menu fits below dropdown
+  if dropdownBottom - menuHeight < 0 then
+    -- Position above dropdown
+    menu:SetPoint("BOTTOMLEFT", dropdown, "TOPLEFT", 0, 2)
+  else
+    -- Position below dropdown
+    menu:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 0, -2)
+  end
+  
+  -- Check if menu fits within screen width
+  if dropdownLeft + menuWidth > screenWidth then
+    -- Align to right edge of dropdown
+    menu:ClearAllPoints()
+    if dropdownBottom - menuHeight < 0 then
+      menu:SetPoint("BOTTOMRIGHT", dropdown, "TOPRIGHT", 0, 2)
+    else
+      menu:SetPoint("TOPRIGHT", dropdown, "BOTTOMRIGHT", 0, -2)
+    end
+  end
+  menu:SetBackdrop(settings.backdrop)
+  menu:SetBackdropColor(.1,.1,.1,1)
+  menu:SetBackdropBorderColor(.3,.3,.3,1)
+  menu:EnableMouse(true)
+  
+  -- Create option buttons
+  for i, option in ipairs(dropdown.options) do
+    local button = CreateFrame("Button", nil, menu)
+    button:SetPoint("TOPLEFT", menu, "TOPLEFT", 2, -(i-1)*18 - 2)
+    button:SetWidth(menu:GetWidth() - 4)
+    button:SetHeight(18)
+    
+    -- Button text
+    button.text = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    button.text:SetPoint("LEFT", button, "LEFT", 3, 0)
+    button.text:SetFont(STANDARD_TEXT_FONT, 9)
+    button.text:SetTextColor(1, 1, 1, 1)
+    button.text:SetText(option)
+    
+    -- Highlight current selection
+    if option == dropdown.selectedValue then
+      button.text:SetTextColor(1, 1, 0, 1)
+    end
+    
+    -- Click handler
+    button:SetScript("OnClick", function()
+      dropdown:SetValue(this.option)
+    end)
+    button.option = option
+    
+    -- Hover effect
+    button:SetScript("OnEnter", function()
+      this.text:SetTextColor(1, 1, 0, 1)
+    end)
+    
+    button:SetScript("OnLeave", function()
+      if this.option == dropdown.selectedValue then
+        this.text:SetTextColor(1, 1, 0, 1)
+      else
+        this.text:SetTextColor(1, 1, 1, 1)
+      end
+    end)
+  end
+  
+  -- Store menu reference
+  dropdown.menu = menu
+  menu:Show()
+  
+  -- Hide menu when clicking elsewhere or pressing ESC
+  menu:SetScript("OnKeyDown", function()
+    if arg1 == "ESCAPE" then
+      menu:Hide()
+    end
+  end)
+  
+  -- Enable keyboard input for ESC handling
+  menu:EnableKeyboard(true)
+  menu:SetScript("OnShow", function()
+    this:SetFocus()
+  end)
+  
+  -- Auto-hide after delay when mouse leaves both dropdown and menu
+  menu:SetScript("OnLeave", function()
+    this.leaveTime = GetTime()
+    this:SetScript("OnUpdate", function()
+      if this.leaveTime and GetTime() - this.leaveTime > 0.5 then
+        -- Check if mouse is over dropdown (fallback for older WoW versions)
+        local mouseOver = false
+        if MouseIsOver then
+          mouseOver = MouseIsOver(dropdown)
+        else
+          -- Manual check for 1.12.1 compatibility
+          local x, y = GetCursorPosition()
+          local scale = UIParent:GetEffectiveScale()
+          x, y = x / scale, y / scale
+          local left, right, top, bottom = dropdown:GetLeft(), dropdown:GetRight(), dropdown:GetTop(), dropdown:GetBottom()
+          mouseOver = (x >= left and x <= right and y >= bottom and y <= top)
+        end
+        
+        if not mouseOver then
+          this:Hide()
+        end
+        this.leaveTime = nil
+        this:SetScript("OnUpdate", nil)
+      end
+    end)
+  end)
+  
+  -- Cancel auto-hide if mouse returns
+  menu:SetScript("OnEnter", function()
+    this.leaveTime = nil
+    this:SetScript("OnUpdate", nil)
+  end)
+end
+
 settings.ShowTooltip = function(parent, strings)
   GameTooltip:SetOwner(parent, "ANCHOR_RIGHT")
   for id, entry in pairs(strings) do
@@ -146,6 +333,7 @@ settings.OpenConfig = function(caption)
   -- Assign functions to dialog
   dialog.CreateTextBox = settings.CreateTextBox
   dialog.CreateLabel = settings.CreateLabel
+  dialog.CreateDropdown = settings.CreateDropdown
 
   -- Save & Reload
   dialog.save = CreateFrame("Button", nil, dialog, "GameMenuButtonTemplate")
@@ -168,13 +356,13 @@ settings.OpenConfig = function(caption)
     local y = dialog.y:GetText()
 
     -- New display options
-    local bar_color_mode = dialog.bar_color_mode:GetText()
-    local border_style = dialog.border_style:GetText()
-    local text_position = dialog.text_position:GetText()
-    local text_format = dialog.text_format:GetText()
+    local bar_color_mode = dialog.bar_color_mode.GetValue()
+    local border_style = dialog.border_style.GetValue()
+    local text_position = dialog.text_position.GetValue()
+    local text_format = dialog.text_format.GetValue()
     local text_size = dialog.text_size:GetText()
-    local health_text_enabled = dialog.health_text_enabled:GetText()
-    local frame_shadow = dialog.frame_shadow:GetText()
+    local health_text_enabled = dialog.health_text_enabled.GetValue()
+    local frame_shadow = dialog.frame_shadow.GetValue()
 
     -- build new config
     local new_config = {
@@ -252,6 +440,7 @@ settings.OpenConfig = function(caption)
 
   backdrop.CreateTextBox = settings.CreateTextBox
   backdrop.CreateLabel = settings.CreateLabel
+  backdrop.CreateDropdown = settings.CreateDropdown
 
   backdrop.pos = 8
 
@@ -466,7 +655,7 @@ settings.OpenConfig = function(caption)
   local caption = backdrop:CreateLabel("Bar Color:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.bar_color_mode = backdrop:CreateTextBox(config.bar_color_mode)
+  dialog.bar_color_mode = backdrop:CreateDropdown({"reaction", "class", "custom"}, config.bar_color_mode)
   dialog.bar_color_mode:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
   dialog.bar_color_mode:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   dialog.bar_color_mode:SetScript("OnEnter", function()
@@ -488,7 +677,7 @@ settings.OpenConfig = function(caption)
   local caption = backdrop:CreateLabel("Border:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.border_style = backdrop:CreateTextBox(config.border_style)
+  dialog.border_style = backdrop:CreateDropdown({"none", "thin", "default", "thick", "glow"}, config.border_style)
   dialog.border_style:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
   dialog.border_style:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   dialog.border_style:SetScript("OnEnter", function()
@@ -512,7 +701,7 @@ settings.OpenConfig = function(caption)
   local caption = backdrop:CreateLabel("Text Pos:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.text_position = backdrop:CreateTextBox(config.text_position)
+  dialog.text_position = backdrop:CreateDropdown({"left", "center", "right"}, config.text_position)
   dialog.text_position:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
   dialog.text_position:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   dialog.text_position:SetScript("OnEnter", function()
@@ -534,7 +723,7 @@ settings.OpenConfig = function(caption)
   local caption = backdrop:CreateLabel("Text Format:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.text_format = backdrop:CreateTextBox(config.text_format)
+  dialog.text_format = backdrop:CreateDropdown({"level_name", "name_only", "level_only", "health_percent", "health_current"}, config.text_format)
   dialog.text_format:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
   dialog.text_format:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   dialog.text_format:SetScript("OnEnter", function()
@@ -576,7 +765,7 @@ settings.OpenConfig = function(caption)
   local caption = backdrop:CreateLabel("Health Text:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.health_text_enabled = backdrop:CreateTextBox(config.health_text_enabled and "true" or "false")
+  dialog.health_text_enabled = backdrop:CreateDropdown({"false", "true"}, config.health_text_enabled and "true" or "false")
   dialog.health_text_enabled:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
   dialog.health_text_enabled:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   dialog.health_text_enabled:SetScript("OnEnter", function()
@@ -597,7 +786,7 @@ settings.OpenConfig = function(caption)
   local caption = backdrop:CreateLabel("Frame Shadow:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.frame_shadow = backdrop:CreateTextBox(config.frame_shadow and "true" or "false")
+  dialog.frame_shadow = backdrop:CreateDropdown({"false", "true"}, config.frame_shadow and "true" or "false")
   dialog.frame_shadow:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
   dialog.frame_shadow:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   dialog.frame_shadow:SetScript("OnEnter", function()
@@ -1161,6 +1350,7 @@ settings.CreateGlobalSettingsPanel = function(parent)
   -- Assign functions to panel
   panel.CreateTextBox = settings.CreateTextBox
   panel.CreateLabel = settings.CreateLabel
+  panel.CreateDropdown = settings.CreateDropdown
 
   panel.pos = 15
 
@@ -1193,7 +1383,7 @@ settings.CreateGlobalSettingsPanel = function(parent)
   local caption = panel:CreateLabel("Debug Mode:")
   caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
-  panel.debug_mode = panel:CreateTextBox(global_config.debug_mode and "true" or "false")
+  panel.debug_mode = panel:CreateDropdown({"false", "true"}, global_config.debug_mode and "true" or "false")
   panel.debug_mode:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
   panel.debug_mode:SetWidth(100)
   panel.pos = panel.pos + 35
@@ -1209,7 +1399,7 @@ settings.CreateGlobalSettingsPanel = function(parent)
   local caption = panel:CreateLabel("Bar Color:")
   caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
-  panel.template_bar_color_mode = panel:CreateTextBox(global_config.default_template.bar_color_mode)
+  panel.template_bar_color_mode = panel:CreateDropdown({"reaction", "class", "custom"}, global_config.default_template.bar_color_mode)
   panel.template_bar_color_mode:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
   panel.template_bar_color_mode:SetWidth(100)
   panel.pos = panel.pos + 25
@@ -1218,7 +1408,7 @@ settings.CreateGlobalSettingsPanel = function(parent)
   local caption = panel:CreateLabel("Border:")
   caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
-  panel.template_border_style = panel:CreateTextBox(global_config.default_template.border_style)
+  panel.template_border_style = panel:CreateDropdown({"none", "thin", "default", "thick", "glow"}, global_config.default_template.border_style)
   panel.template_border_style:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
   panel.template_border_style:SetWidth(100)
   panel.pos = panel.pos + 25
@@ -1227,7 +1417,7 @@ settings.CreateGlobalSettingsPanel = function(parent)
   local caption = panel:CreateLabel("Text Format:")
   caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
-  panel.template_text_format = panel:CreateTextBox(global_config.default_template.text_format)
+  panel.template_text_format = panel:CreateDropdown({"level_name", "name_only", "level_only", "health_percent", "health_current"}, global_config.default_template.text_format)
   panel.template_text_format:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
   panel.template_text_format:SetWidth(100)
   panel.pos = panel.pos + 25
@@ -1236,7 +1426,7 @@ settings.CreateGlobalSettingsPanel = function(parent)
   local caption = panel:CreateLabel("Frame Shadow:")
   caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
-  panel.template_frame_shadow = panel:CreateTextBox(global_config.default_template.frame_shadow and "true" or "false")
+  panel.template_frame_shadow = panel:CreateDropdown({"false", "true"}, global_config.default_template.frame_shadow and "true" or "false")
   panel.template_frame_shadow:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
   panel.template_frame_shadow:SetWidth(100)
   panel.pos = panel.pos + 35
@@ -1252,13 +1442,13 @@ settings.CreateGlobalSettingsPanel = function(parent)
     -- Save general settings
     global_config.auto_cleanup_time = tonumber(panel.auto_cleanup_time:GetText()) or global_config.auto_cleanup_time
     global_config.max_units_per_window = tonumber(panel.max_units_per_window:GetText()) or global_config.max_units_per_window
-    global_config.debug_mode = panel.debug_mode:GetText() == "true"
+    global_config.debug_mode = panel.debug_mode.GetValue() == "true"
     
     -- Save template settings
-    global_config.default_template.bar_color_mode = panel.template_bar_color_mode:GetText() or global_config.default_template.bar_color_mode
-    global_config.default_template.border_style = panel.template_border_style:GetText() or global_config.default_template.border_style
-    global_config.default_template.text_format = panel.template_text_format:GetText() or global_config.default_template.text_format
-    global_config.default_template.frame_shadow = panel.template_frame_shadow:GetText() == "true"
+    global_config.default_template.bar_color_mode = panel.template_bar_color_mode.GetValue() or global_config.default_template.bar_color_mode
+    global_config.default_template.border_style = panel.template_border_style.GetValue() or global_config.default_template.border_style
+    global_config.default_template.text_format = panel.template_text_format.GetValue() or global_config.default_template.text_format
+    global_config.default_template.frame_shadow = panel.template_frame_shadow.GetValue() == "true"
     
     DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Shagu|cffffffffScan:|cffffaaaa Settings saved!")
   end)
@@ -1342,6 +1532,7 @@ settings.OpenMainConfig = function()
   -- Assign functions to dialog
   dialog.CreateTextBox = settings.CreateTextBox
   dialog.CreateLabel = settings.CreateLabel
+  dialog.CreateDropdown = settings.CreateDropdown
 
   -- Title
   dialog.title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -1369,6 +1560,7 @@ settings.OpenMainConfig = function()
 
   backdrop.CreateTextBox = settings.CreateTextBox
   backdrop.CreateLabel = settings.CreateLabel
+  backdrop.CreateDropdown = settings.CreateDropdown
 
   backdrop.pos = 8
 
@@ -1419,7 +1611,7 @@ settings.OpenMainConfig = function()
   local caption = backdrop:CreateLabel("Debug Mode:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.debug_mode = backdrop:CreateTextBox(global_config.debug_mode and "true" or "false")
+  dialog.debug_mode = backdrop:CreateDropdown({"false", "true"}, global_config.debug_mode and "true" or "false")
   dialog.debug_mode:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
   dialog.debug_mode:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   dialog.debug_mode:SetScript("OnEnter", function()
@@ -1447,7 +1639,7 @@ settings.OpenMainConfig = function()
   local caption = backdrop:CreateLabel("Bar Color:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.template_bar_color_mode = backdrop:CreateTextBox(global_config.default_template.bar_color_mode)
+  dialog.template_bar_color_mode = backdrop:CreateDropdown({"reaction", "class", "custom"}, global_config.default_template.bar_color_mode)
   dialog.template_bar_color_mode:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
   dialog.template_bar_color_mode:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   backdrop.pos = backdrop.pos + 18
@@ -1456,7 +1648,7 @@ settings.OpenMainConfig = function()
   local caption = backdrop:CreateLabel("Border:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.template_border_style = backdrop:CreateTextBox(global_config.default_template.border_style)
+  dialog.template_border_style = backdrop:CreateDropdown({"none", "thin", "default", "thick", "glow"}, global_config.default_template.border_style)
   dialog.template_border_style:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
   dialog.template_border_style:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   backdrop.pos = backdrop.pos + 18
@@ -1465,7 +1657,7 @@ settings.OpenMainConfig = function()
   local caption = backdrop:CreateLabel("Text Format:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.template_text_format = backdrop:CreateTextBox(global_config.default_template.text_format)
+  dialog.template_text_format = backdrop:CreateDropdown({"level_name", "name_only", "level_only", "health_percent", "health_current"}, global_config.default_template.text_format)
   dialog.template_text_format:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
   dialog.template_text_format:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   backdrop.pos = backdrop.pos + 18
@@ -1474,7 +1666,7 @@ settings.OpenMainConfig = function()
   local caption = backdrop:CreateLabel("Frame Shadow:")
   caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
-  dialog.template_frame_shadow = backdrop:CreateTextBox(global_config.default_template.frame_shadow and "true" or "false")
+  dialog.template_frame_shadow = backdrop:CreateDropdown({"false", "true"}, global_config.default_template.frame_shadow and "true" or "false")
   dialog.template_frame_shadow:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
   dialog.template_frame_shadow:SetPoint("TOPRIGHT", backdrop, "TOPRIGHT", -8, -backdrop.pos)
   backdrop.pos = backdrop.pos + 18
@@ -1493,13 +1685,13 @@ settings.OpenMainConfig = function()
     -- Save general settings
     global_config.auto_cleanup_time = tonumber(dialog.auto_cleanup_time:GetText()) or global_config.auto_cleanup_time
     global_config.max_units_per_window = tonumber(dialog.max_units_per_window:GetText()) or global_config.max_units_per_window
-    global_config.debug_mode = dialog.debug_mode:GetText() == "true"
+    global_config.debug_mode = dialog.debug_mode.GetValue() == "true"
     
     -- Save template settings
-    global_config.default_template.bar_color_mode = dialog.template_bar_color_mode:GetText() or global_config.default_template.bar_color_mode
-    global_config.default_template.border_style = dialog.template_border_style:GetText() or global_config.default_template.border_style
-    global_config.default_template.text_format = dialog.template_text_format:GetText() or global_config.default_template.text_format
-    global_config.default_template.frame_shadow = dialog.template_frame_shadow:GetText() == "true"
+    global_config.default_template.bar_color_mode = dialog.template_bar_color_mode.GetValue() or global_config.default_template.bar_color_mode
+    global_config.default_template.border_style = dialog.template_border_style.GetValue() or global_config.default_template.border_style
+    global_config.default_template.text_format = dialog.template_text_format.GetValue() or global_config.default_template.text_format
+    global_config.default_template.frame_shadow = dialog.template_frame_shadow.GetValue() == "true"
     
     DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Shagu|cffffffffScan:|cffffaaaa Main settings saved!")
     this:GetParent():Hide()
