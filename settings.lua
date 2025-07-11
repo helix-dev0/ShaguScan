@@ -446,8 +446,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = 8
 
   -- Filter
-  local caption = backdrop:CreateLabel("Filter:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Filter:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.filter = backdrop:CreateTextBox(config.filter)
   dialog.filter:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -483,8 +483,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 9
 
   -- Width
-  local caption = backdrop:CreateLabel("Width:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Width:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.width = backdrop:CreateTextBox(config.width)
   dialog.width:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -502,8 +502,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Height
-  local caption = backdrop:CreateLabel("Height:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Height:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.height = backdrop:CreateTextBox(config.height)
   dialog.height:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -522,8 +522,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Spacing
-  local caption = backdrop:CreateLabel("Spacing:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Spacing:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.spacing = backdrop:CreateTextBox(config.spacing)
   dialog.spacing:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -542,8 +542,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Max per Row
-  local caption = backdrop:CreateLabel("Max-Row:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Max-Row:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.maxrow = backdrop:CreateTextBox(config.maxrow)
   dialog.maxrow:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -565,8 +565,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 9
 
   -- Anchor
-  local caption = backdrop:CreateLabel("Anchor:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Anchor:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.anchor = backdrop:CreateTextBox(config.anchor)
   dialog.anchor:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -591,8 +591,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Scale
-  local caption = backdrop:CreateLabel("Scale:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Scale:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.scale = backdrop:CreateTextBox(utils.round(config.scale, 2))
   dialog.scale:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -611,8 +611,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Position-X
-  local caption = backdrop:CreateLabel("X-Position:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("X-Position:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.x = backdrop:CreateTextBox(utils.round(config.x, 2))
   dialog.x:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -631,8 +631,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Position-Y
-  local caption = backdrop:CreateLabel("Y-Position:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Y-Position:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.y = backdrop:CreateTextBox(utils.round(config.y, 2))
   dialog.y:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -653,8 +653,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 9
 
   -- Bar Color Mode
-  local caption = backdrop:CreateLabel("Bar Color:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Bar Color:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.bar_color_mode = backdrop:CreateDropdown({"reaction", "class", "custom"}, config.bar_color_mode)
   dialog.bar_color_mode:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -675,8 +675,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Border Style
-  local caption = backdrop:CreateLabel("Border:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Border:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.border_style = backdrop:CreateDropdown({"none", "thin", "default", "thick", "glow"}, config.border_style)
   dialog.border_style:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -699,8 +699,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Text Position
-  local caption = backdrop:CreateLabel("Text Pos:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Text Pos:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.text_position = backdrop:CreateDropdown({"left", "center", "right"}, config.text_position)
   dialog.text_position:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -721,8 +721,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Text Format
-  local caption = backdrop:CreateLabel("Text Format:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Text Format:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.text_format = backdrop:CreateDropdown({"level_name", "name_only", "level_only", "health_percent", "health_current"}, config.text_format)
   dialog.text_format:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -745,8 +745,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Text Size
-  local caption = backdrop:CreateLabel("Text Size:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Text Size:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.text_size = backdrop:CreateTextBox(config.text_size)
   dialog.text_size:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -763,8 +763,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Health Text Enabled
-  local caption = backdrop:CreateLabel("Health Text:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Health Text:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.health_text_enabled = backdrop:CreateDropdown({"false", "true"}, config.health_text_enabled and "true" or "false")
   dialog.health_text_enabled:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -784,8 +784,8 @@ settings.OpenConfig = function(caption)
   backdrop.pos = backdrop.pos + 18
 
   -- Frame Shadow
-  local caption = backdrop:CreateLabel("Frame Shadow:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Frame Shadow:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.frame_shadow = backdrop:CreateDropdown({"false", "true"}, config.frame_shadow and "true" or "false")
   dialog.frame_shadow:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 60, -backdrop.pos)
@@ -877,7 +877,7 @@ settings.CreateTestBar = function(config, caption)
   
   -- Create test health bar using the same function as normal bars
   local testGuid = "test_unit_" .. GetTime()
-  local testBar = ui.CreateBar(testFrame, testGuid, config)
+  local testBar = ShaguScan.ui.CreateBar(testFrame, testGuid, config)
   testBar:SetPoint("CENTER", testFrame, "CENTER", 0, -5)
   testBar:SetWidth(config.width)
   testBar:SetHeight(config.height)
@@ -1220,7 +1220,7 @@ end
 settings.CreateNewScanWindow = function()
   -- Create a simple dialog to get window name
   local dialog = CreateFrame("Frame", "ShaguScanNewWindowDialog", UIParent)
-  dialog:SetFrameStrata("FULLSCREEN")
+  dialog:SetFrameStrata("FULLSCREEN_DIALOG")
   dialog:SetFrameLevel(100)
   dialog:SetPoint("CENTER", 0, 0)
   dialog:SetWidth(300)
@@ -1293,7 +1293,7 @@ end
 settings.DeleteScanWindow = function(caption, panel)
   -- Confirmation dialog
   local dialog = CreateFrame("Frame", "ShaguScanDeleteDialog", UIParent)
-  dialog:SetFrameStrata("FULLSCREEN")
+  dialog:SetFrameStrata("FULLSCREEN_DIALOG")
   dialog:SetFrameLevel(100)
   dialog:SetPoint("CENTER", 0, 0)
   dialog:SetWidth(300)
@@ -1365,8 +1365,8 @@ settings.CreateGlobalSettingsPanel = function(parent)
   panel.pos = panel.pos + 20
 
   -- Auto Cleanup Time
-  local caption = panel:CreateLabel("Cleanup Time:")
-  caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
+  local label = panel:CreateLabel("Cleanup Time:")
+  label:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
   panel.auto_cleanup_time = panel:CreateTextBox(global_config.auto_cleanup_time)
   panel.auto_cleanup_time:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
@@ -1374,8 +1374,8 @@ settings.CreateGlobalSettingsPanel = function(parent)
   panel.pos = panel.pos + 25
 
   -- Max Units Per Window
-  local caption = panel:CreateLabel("Max Units:")
-  caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
+  local label = panel:CreateLabel("Max Units:")
+  label:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
   panel.max_units_per_window = panel:CreateTextBox(global_config.max_units_per_window)
   panel.max_units_per_window:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
@@ -1383,8 +1383,8 @@ settings.CreateGlobalSettingsPanel = function(parent)
   panel.pos = panel.pos + 25
 
   -- Debug Mode
-  local caption = panel:CreateLabel("Debug Mode:")
-  caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
+  local label = panel:CreateLabel("Debug Mode:")
+  label:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
   panel.debug_mode = panel:CreateDropdown({"false", "true"}, global_config.debug_mode and "true" or "false")
   panel.debug_mode:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
@@ -1399,8 +1399,8 @@ settings.CreateGlobalSettingsPanel = function(parent)
   panel.pos = panel.pos + 20
 
   -- Template Bar Color Mode
-  local caption = panel:CreateLabel("Bar Color:")
-  caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
+  local label = panel:CreateLabel("Bar Color:")
+  label:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
   panel.template_bar_color_mode = panel:CreateDropdown({"reaction", "class", "custom"}, global_config.default_template.bar_color_mode)
   panel.template_bar_color_mode:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
@@ -1408,8 +1408,8 @@ settings.CreateGlobalSettingsPanel = function(parent)
   panel.pos = panel.pos + 25
 
   -- Template Border Style
-  local caption = panel:CreateLabel("Border:")
-  caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
+  local label = panel:CreateLabel("Border:")
+  label:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
   panel.template_border_style = panel:CreateDropdown({"none", "thin", "default", "thick", "glow"}, global_config.default_template.border_style)
   panel.template_border_style:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
@@ -1417,8 +1417,8 @@ settings.CreateGlobalSettingsPanel = function(parent)
   panel.pos = panel.pos + 25
 
   -- Template Text Format
-  local caption = panel:CreateLabel("Text Format:")
-  caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
+  local label = panel:CreateLabel("Text Format:")
+  label:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
   panel.template_text_format = panel:CreateDropdown({"level_name", "name_only", "level_only", "health_percent", "health_current"}, global_config.default_template.text_format)
   panel.template_text_format:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
@@ -1426,8 +1426,8 @@ settings.CreateGlobalSettingsPanel = function(parent)
   panel.pos = panel.pos + 25
 
   -- Template Frame Shadow
-  local caption = panel:CreateLabel("Frame Shadow:")
-  caption:SetPoint("TOPLEFT", panel, 10, -panel.pos)
+  local label = panel:CreateLabel("Frame Shadow:")
+  label:SetPoint("TOPLEFT", panel, 10, -panel.pos)
 
   panel.template_frame_shadow = panel:CreateDropdown({"false", "true"}, global_config.default_template.frame_shadow and "true" or "false")
   panel.template_frame_shadow:SetPoint("TOPLEFT", panel, "TOPLEFT", 120, -panel.pos)
@@ -1575,8 +1575,8 @@ settings.OpenMainConfig = function()
   backdrop.pos = backdrop.pos + 20
 
   -- Auto Cleanup Time
-  local caption = backdrop:CreateLabel("Cleanup Time:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Cleanup Time:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.auto_cleanup_time = backdrop:CreateTextBox(global_config.auto_cleanup_time)
   dialog.auto_cleanup_time:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
@@ -1593,8 +1593,8 @@ settings.OpenMainConfig = function()
   backdrop.pos = backdrop.pos + 18
 
   -- Max Units Per Window
-  local caption = backdrop:CreateLabel("Max Units:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Max Units:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.max_units_per_window = backdrop:CreateTextBox(global_config.max_units_per_window)
   dialog.max_units_per_window:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
@@ -1611,8 +1611,8 @@ settings.OpenMainConfig = function()
   backdrop.pos = backdrop.pos + 18
 
   -- Debug Mode
-  local caption = backdrop:CreateLabel("Debug Mode:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Debug Mode:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.debug_mode = backdrop:CreateDropdown({"false", "true"}, global_config.debug_mode and "true" or "false")
   dialog.debug_mode:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
@@ -1639,8 +1639,8 @@ settings.OpenMainConfig = function()
   backdrop.pos = backdrop.pos + 20
 
   -- Template Bar Color Mode
-  local caption = backdrop:CreateLabel("Bar Color:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Bar Color:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.template_bar_color_mode = backdrop:CreateDropdown({"reaction", "class", "custom"}, global_config.default_template.bar_color_mode)
   dialog.template_bar_color_mode:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
@@ -1648,8 +1648,8 @@ settings.OpenMainConfig = function()
   backdrop.pos = backdrop.pos + 18
 
   -- Template Border Style
-  local caption = backdrop:CreateLabel("Border:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Border:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.template_border_style = backdrop:CreateDropdown({"none", "thin", "default", "thick", "glow"}, global_config.default_template.border_style)
   dialog.template_border_style:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
@@ -1657,8 +1657,8 @@ settings.OpenMainConfig = function()
   backdrop.pos = backdrop.pos + 18
 
   -- Template Text Format
-  local caption = backdrop:CreateLabel("Text Format:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Text Format:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.template_text_format = backdrop:CreateDropdown({"level_name", "name_only", "level_only", "health_percent", "health_current"}, global_config.default_template.text_format)
   dialog.template_text_format:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
@@ -1666,8 +1666,8 @@ settings.OpenMainConfig = function()
   backdrop.pos = backdrop.pos + 18
 
   -- Template Frame Shadow
-  local caption = backdrop:CreateLabel("Frame Shadow:")
-  caption:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
+  local label = backdrop:CreateLabel("Frame Shadow:")
+  label:SetPoint("TOPLEFT", backdrop, 10, -backdrop.pos)
 
   dialog.template_frame_shadow = backdrop:CreateDropdown({"false", "true"}, global_config.default_template.frame_shadow and "true" or "false")
   dialog.template_frame_shadow:SetPoint("TOPLEFT", backdrop, "TOPLEFT", 120, -backdrop.pos)
