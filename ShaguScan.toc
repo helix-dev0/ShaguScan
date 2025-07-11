@@ -8,6 +8,9 @@
 global.lua
 utils.lua
 widgets.lua
+dialogs.lua
+testbars.lua
+mainpanel.lua
 settings.lua
 core.lua
 filter.lua

@@ -4,8 +4,8 @@ local utils = {}
 
 utils.strsplit = function(delimiter, subject)
   if not subject then return nil end
-  local delimiter, fields = delimiter or ":", {}
-  local pattern = string.format("([^%s]+)", delimiter)
+  local delim, fields = delimiter or ":", {}
+  local pattern = string.format("([^%s]+)", delim)
   string.gsub(subject, pattern, function(c) fields[table.getn(fields)+1] = c end)
   return unpack(fields)
 end
@@ -134,11 +134,42 @@ utils.GetUnitColor = function(unitstr)
   if UnitIsPlayer(unitstr) then
     local _, class = UnitClass(unitstr)
 
-    if RAID_CLASS_COLORS[class] then
+    if class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class] then
       r, g, b = RAID_CLASS_COLORS[class].r, RAID_CLASS_COLORS[class].g, RAID_CLASS_COLORS[class].b
+      
+      -- Debug output for class colors
+      if ShaguScan_db.global_settings and ShaguScan_db.global_settings.debug_mode then
+        DEFAULT_CHAT_FRAME:AddMessage("ShaguScan: Class color for " .. tostring(unitstr) .. " (" .. tostring(class) .. "): " .. tostring(r) .. ", " .. tostring(g) .. ", " .. tostring(b))
+      end
+    else
+      -- Fallback class colors if RAID_CLASS_COLORS not available
+      if class then
+        if class == "WARRIOR" then r, g, b = 0.78, 0.61, 0.43
+        elseif class == "PALADIN" then r, g, b = 0.96, 0.55, 0.73
+        elseif class == "HUNTER" then r, g, b = 0.67, 0.83, 0.45
+        elseif class == "ROGUE" then r, g, b = 1, 0.96, 0.41
+        elseif class == "PRIEST" then r, g, b = 1, 1, 1
+        elseif class == "SHAMAN" then r, g, b = 0, 0.44, 0.87
+        elseif class == "MAGE" then r, g, b = 0.41, 0.8, 0.94
+        elseif class == "WARLOCK" then r, g, b = 0.58, 0.51, 0.79
+        elseif class == "DRUID" then r, g, b = 1, 0.49, 0.04
+        end
+        
+        if ShaguScan_db.global_settings and ShaguScan_db.global_settings.debug_mode then
+          DEFAULT_CHAT_FRAME:AddMessage("ShaguScan: Fallback class color for " .. tostring(unitstr) .. " (" .. tostring(class) .. "): " .. tostring(r) .. ", " .. tostring(g) .. ", " .. tostring(b))
+        end
+      else
+        -- Debug: why no class?
+        if ShaguScan_db.global_settings and ShaguScan_db.global_settings.debug_mode then
+          DEFAULT_CHAT_FRAME:AddMessage("ShaguScan: No class found for " .. tostring(unitstr) .. " - UnitClass returned nil")
+        end
+      end
     end
   else
-    return utils.GetReactionColor(unitstr)
+    -- Debug: not a player
+    if ShaguScan_db.global_settings and ShaguScan_db.global_settings.debug_mode then
+      DEFAULT_CHAT_FRAME:AddMessage("ShaguScan: Unit " .. tostring(unitstr) .. " is not a player")
+    end
   end
 
   return utils.rgbhex(r,g,b), r, g, b
@@ -281,20 +312,21 @@ end
 
 utils.MergeConfigDefaults = function(config)
   -- Ensure all new display options have defaults for backward compatibility
+  local pfui_colors = utils.GetPfUIColors()
   local defaults = {
-    bar_texture = "Interface\\TargetingFrame\\UI-StatusBar",
+    bar_texture = utils.GetDefaultStatusbarTexture(),
     bar_color_mode = "reaction",
     bar_color_custom = {r=1, g=0.8, b=0.2, a=1},
-    background_alpha = 0.8,
-    background_color = {r=0, g=0, b=0, a=1},
+    background_alpha = 0.9,
+    background_color = pfui_colors.background,
     border_style = "default",
-    border_color = {r=0.2, g=0.2, b=0.2, a=1},
-    text_font = STANDARD_TEXT_FONT,
-    text_size = 9,
+    border_color = pfui_colors.border,
+    text_font = utils.GetDefaultPfUIFont(),
+    text_size = 10,
     text_outline = "THINOUTLINE",
     text_position = "left",
     text_format = "level_name",
-    text_color = {r=1, g=1, b=1, a=1},
+    text_color = pfui_colors.text,
     health_text_enabled = false,
     health_text_position = "right",
     health_text_format = "percent",
@@ -322,6 +354,196 @@ utils.DeepCopy = function(orig)
     copy = orig
   end
   return copy
+end
+
+utils.MergeGlobalDefaults = function(global_config)
+  -- Ensure global settings have all default values for backward compatibility
+  local defaults = {
+    auto_cleanup_time = 30,
+    max_units_per_window = 50,
+    enable_sound_alerts = false,
+    enable_minimap_button = true,
+    debug_mode = false,
+    hide_window_headers = false
+  }
+  
+  for key, value in pairs(defaults) do
+    if global_config[key] == nil then
+      global_config[key] = value
+    end
+  end
+  
+  return global_config
+end
+
+-- pfUI Font Integration
+utils.pfUI_fonts = {
+  ["BalooBhaina"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\BalooBhaina.ttf",
+  ["Bungee"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\Bungee.ttf",
+  ["CaesarDressing"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\CaesarDressing.ttf",
+  ["CoveredByYourGrace"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\CoveredByYourGrace.ttf",
+  ["JotiOne"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\JotiOne.ttf",
+  ["LodrinaSolid"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\LodrinaSolid.ttf",
+  ["NovaFlat"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\NovaFlat.ttf",
+  ["Roboto"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\Roboto.ttf",
+  ["SedgwickAveDisplay"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\SedgwickAveDisplay.ttf",
+  ["Share"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\Share.ttf",
+  ["ShareBold"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\ShareBold.ttf",
+  ["Sniglet"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\Sniglet.ttf",
+  ["SquadaOne"] = "Interface\\AddOns\\pfUI-fonts\\fonts\\SquadaOne.ttf"
+}
+
+utils.GetPfUIFont = function(fontName)
+  if utils.pfUI_fonts[fontName] then
+    return utils.pfUI_fonts[fontName]
+  end
+  return nil
+end
+
+utils.IsPfUIFontsAvailable = function()
+  -- Check if pfUI-fonts addon is loaded
+  if pfUI_fonts then
+    return true
+  end
+  -- Alternative check: try to access a font file
+  local testFont = utils.pfUI_fonts["Roboto"]
+  if testFont then
+    -- In vanilla WoW, we can't easily test file existence, so assume it's available if pfUI is present
+    return pfUI ~= nil
+  end
+  return false
+end
+
+utils.GetDefaultPfUIFont = function()
+  -- Return a good default pfUI font for UI elements
+  if utils.IsPfUIFontsAvailable() then
+    -- Roboto is a clean, readable font good for UI text
+    return utils.GetPfUIFont("Roboto") or STANDARD_TEXT_FONT
+  end
+  return STANDARD_TEXT_FONT
+end
+
+utils.GetPfUIFontList = function()
+  local fonts = {}
+  local index = 1
+  
+  -- Add standard WoW fonts first
+  fonts[index] = {name = "Standard", path = STANDARD_TEXT_FONT, preview = true}
+  index = index + 1
+  fonts[index] = {name = "Damage", path = DAMAGE_TEXT_FONT, preview = true}
+  index = index + 1
+  
+  -- Add pfUI fonts if available (most popular only)
+  if pfUI and pfUI.font then
+    -- Most popular pfUI fonts only
+    local pfUI_fonts = {
+      ["Roboto"] = "Interface\\AddOns\\pfUI\\fonts\\Roboto.ttf",
+      ["Roboto Condensed"] = "Interface\\AddOns\\pfUI\\fonts\\RobotoCondensed.ttf", 
+      ["Homespun"] = "Interface\\AddOns\\pfUI\\fonts\\Homespun.ttf",
+      ["PT Sans"] = "Interface\\AddOns\\pfUI\\fonts\\PTSans.ttf",
+      ["Continuum"] = "Interface\\AddOns\\pfUI\\fonts\\Continuum.ttf",
+      ["Myriad"] = "Interface\\AddOns\\pfUI\\fonts\\Myriad.ttf",
+      ["Vermin"] = "Interface\\AddOns\\pfUI\\fonts\\Vermin.ttf",
+      ["Pixel"] = "Interface\\AddOns\\pfUI\\fonts\\Pixel.ttf",
+      ["Diablo"] = "Interface\\AddOns\\pfUI\\fonts\\Diablo.ttf",
+      ["Fritz"] = "Interface\\AddOns\\pfUI\\fonts\\Fritz.ttf"
+    }
+    
+    -- Add pfUI fonts to list
+    for name, path in pairs(pfUI_fonts) do
+      fonts[index] = {name = name, path = path, preview = true}
+      index = index + 1
+    end
+  elseif utils.IsPfUIFontsAvailable() then
+    -- Fallback to old method if pfUI global not available
+    for name, path in pairs(utils.pfUI_fonts) do
+      fonts[index] = {name = name, path = path, preview = true}
+      index = index + 1
+    end
+  end
+  
+  return fonts
+end
+
+-- Pre-defined backdrop configurations for performance
+local BACKDROP_CONFIGS = {
+  none = nil,
+  default = {
+    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    tile = true, tileSize = 8,
+    insets = { left = 0, right = 0, top = 0, bottom = 0 }
+  },
+  gradient = {
+    bgFile = "Interface\\ChatFrame\\ChatFrameBackground", 
+    tile = true, tileSize = 8,
+    insets = { left = 0, right = 0, top = 0, bottom = 0 }
+  }
+}
+
+-- pfUI statusbar texture list
+utils.GetPfUIStatusbarTextures = function()
+  local textures = {}
+  local index = 1
+  
+  -- Add default WoW statusbar textures first
+  textures[index] = {name = "Default", path = "Interface\\TargetingFrame\\UI-StatusBar"}
+  index = index + 1
+  
+  -- Add pfUI statusbar textures if available (most popular only)
+  if pfUI and pfUI.media then
+    -- Most popular pfUI statusbar textures
+    local pfUI_textures = {
+      ["Minimalist"] = "Interface\\AddOns\\pfUI\\media\\statusbar\\minimalist",
+      ["Smooth"] = "Interface\\AddOns\\pfUI\\media\\statusbar\\smooth", 
+      ["Gradient"] = "Interface\\AddOns\\pfUI\\media\\statusbar\\gradient",
+      ["Flat"] = "Interface\\AddOns\\pfUI\\media\\statusbar\\flat",
+      ["Gloss"] = "Interface\\AddOns\\pfUI\\media\\statusbar\\gloss",
+      ["Aluminium"] = "Interface\\AddOns\\pfUI\\media\\statusbar\\aluminium",
+      ["Glamour"] = "Interface\\AddOns\\pfUI\\media\\statusbar\\glamour",
+      ["Perl"] = "Interface\\AddOns\\pfUI\\media\\statusbar\\perl",
+      ["Outline"] = "Interface\\AddOns\\pfUI\\media\\statusbar\\outline",
+      ["Striped"] = "Interface\\AddOns\\pfUI\\media\\statusbar\\striped"
+    }
+    
+    -- Add pfUI textures to list
+    for name, path in pairs(pfUI_textures) do
+      textures[index] = {name = name, path = path}
+      index = index + 1
+    end
+  end
+  
+  return textures
+end
+
+utils.GetBackgroundTexture = function(style)
+  return BACKDROP_CONFIGS[style] or BACKDROP_CONFIGS.default
+end
+
+utils.GetPfUIBackground = function()
+  return BACKDROP_CONFIGS.default
+end
+
+utils.GetPfUIColors = function()
+  -- Return pfUI-inspired color scheme
+  return {
+    background = {r=0.06, g=0.06, b=0.06, a=0.9},      -- Dark gray background (#111111 equivalent)
+    border = {r=0.2, g=0.2, b=0.2, a=1},               -- Medium gray border
+    text = {r=0.8, g=0.8, b=0.8, a=1},                 -- Light gray text (#cccccc equivalent)
+    accent = {r=0.2, g=1, b=0.8, a=1},                 -- Bright teal accent (#33ffcc equivalent)
+    hover = {r=1, g=1, b=1, a=1}                       -- White hover
+  }
+end
+
+utils.GetDefaultStatusbarTexture = function()
+  -- Return pfUI statusbar texture if available, otherwise WoW default
+  if pfUI and pfUI.media then
+    if pfUI.media["statusbar"] then
+      return pfUI.media["statusbar"]
+    elseif pfUI.media["texture"] then
+      return pfUI.media["texture"]
+    end
+  end
+  return "Interface\\TargetingFrame\\UI-StatusBar"
 end
 
 ShaguScan.utils = utils

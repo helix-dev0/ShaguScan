@@ -14,7 +14,7 @@ ui.border = {
 
 ui.background = {
   bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-  tile = true, tileSize = 16, edgeSize = 8,
+  tile = true, tileSize = 8, edgeSize = 8,
   insets = { left = 0, right = 0, top = 0, bottom = 0 }
 }
 
@@ -90,7 +90,9 @@ ui.CreateRoot = function(parent, caption)
 end
 
 ui.BarEnter = function()
-  this.border:SetBackdropBorderColor(1, 1, 1, 1)
+  if this.border then
+    this.border:SetBackdropBorderColor(1, 1, 1, 1)
+  end
   this.hover = true
 
   GameTooltip_SetDefaultAnchor(GameTooltip, this)
@@ -110,6 +112,11 @@ ui.BarUpdate = function()
   -- update statusbar values
   this.bar:SetMinMaxValues(0, UnitHealthMax(this.guid))
   this.bar:SetValue(UnitHealth(this.guid))
+
+  -- update statusbar texture based on configuration
+  if this.config.bar_texture then
+    this.bar:SetStatusBarTexture(this.config.bar_texture)
+  end
 
   -- update health bar color based on configuration
   local hex, r, g, b, a = utils.GetBarColor(this.guid, this.config)
@@ -182,7 +189,9 @@ ui.CreateBar = function(parent, guid, config)
 
   -- create health bar
   local bar = CreateFrame("StatusBar", nil, frame)
-  bar:SetStatusBarTexture(config.bar_texture)
+  -- Apply statusbar texture from config (user's choice)
+  local texture = config.bar_texture or "Interface\\TargetingFrame\\UI-StatusBar"
+  bar:SetStatusBarTexture(texture)
   bar:SetStatusBarColor(1, .8, .2, 1)
   bar:SetMinMaxValues(0, 100)
   bar:SetValue(20)
@@ -199,12 +208,10 @@ ui.CreateBar = function(parent, guid, config)
     text:SetPoint("CENTER", bar, "CENTER", 0, 0)
     text:SetJustifyH("CENTER")
   elseif config.text_position == "right" then
-    text:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -2, -2)
-    text:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", -2, 2)
+    text:SetPoint("RIGHT", bar, "RIGHT", -2, 0)
     text:SetJustifyH("RIGHT")
   else -- left (default)
-    text:SetPoint("TOPLEFT", bar, "TOPLEFT", 2, -2)
-    text:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 2, 2)
+    text:SetPoint("LEFT", bar, "LEFT", 2, 0)
     text:SetJustifyH("LEFT")
   end
   frame.text = text
@@ -220,12 +227,10 @@ ui.CreateBar = function(parent, guid, config)
       health_text:SetPoint("CENTER", bar, "CENTER", 0, 0)
       health_text:SetJustifyH("CENTER")
     elseif config.health_text_position == "left" then
-      health_text:SetPoint("TOPLEFT", bar, "TOPLEFT", 2, -2)
-      health_text:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 2, 2)
+      health_text:SetPoint("LEFT", bar, "LEFT", 2, 0)
       health_text:SetJustifyH("LEFT")
     else -- right (default)
-      health_text:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -2, -2)
-      health_text:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", -2, 2)
+      health_text:SetPoint("RIGHT", bar, "RIGHT", -2, 0)
       health_text:SetJustifyH("RIGHT")
     end
     frame.health_text = health_text
@@ -270,32 +275,60 @@ ui.CreateBar = function(parent, guid, config)
   frame.target_right = target_right
 
   -- create frame backdrops based on configuration
-  if pfUI and pfUI.uf then
-    pfUI.api.CreateBackdrop(frame)
-    frame.border = frame.backdrop
+  if pfUI and pfUI.api and pfUI.api.CreateBackdrop then
+    -- Use pfUI's backdrop system on the parent frame to avoid interfering with statusbar
+    local success = pcall(pfUI.api.CreateBackdrop, frame, nil, true)
+    if success and frame.backdrop then
+      frame.border = frame.backdrop
+      
+      -- Apply pfUI-style colors
+      local bg_color = config.background_color
+      frame.backdrop:SetBackdropColor(bg_color.r, bg_color.g, bg_color.b, config.background_alpha)
+      frame.backdrop:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
+    else
+      -- Fallback to regular backdrop on parent frame
+      local bg_texture = utils.GetBackgroundTexture(config.background_texture) or ui.background
+      if bg_texture then
+        frame:SetBackdrop(bg_texture)
+        frame:SetBackdropColor(config.background_color.r, config.background_color.g, config.background_color.b, config.background_alpha)
+      end
+      
+      -- create border if not disabled
+      local border_backdrop = utils and utils.GetBorderBackdrop and utils.GetBorderBackdrop(config)
+      if border_backdrop then
+        local border = CreateFrame("Frame", nil, frame)
+        border:SetBackdrop(border_backdrop)
+        border:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
+        border:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
+        border:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
+        frame.border = border
+      end
+    end
   else
-    -- set background
-    local bg_color = config.background_color
-    frame:SetBackdrop(ui.background)
-    frame:SetBackdropColor(bg_color.r, bg_color.g, bg_color.b, config.background_alpha)
+    -- Use configurable background texture on parent frame
+    local bg_texture = utils.GetBackgroundTexture(config.background_texture) or ui.background
+    if bg_texture then
+      frame:SetBackdrop(bg_texture)
+      frame:SetBackdropColor(config.background_color.r, config.background_color.g, config.background_color.b, config.background_alpha)
+    end
 
     -- create border if not disabled
-    local border_backdrop = utils.GetBorderBackdrop(config)
+    local border_backdrop = utils and utils.GetBorderBackdrop and utils.GetBorderBackdrop(config)
     if border_backdrop then
-      local border = CreateFrame("Frame", nil, frame.bar)
+      local border = CreateFrame("Frame", nil, frame)
       border:SetBackdrop(border_backdrop)
       border:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
-      border:SetPoint("TOPLEFT", frame.bar, "TOPLEFT", -2, 2)
-      border:SetPoint("BOTTOMRIGHT", frame.bar, "BOTTOMRIGHT", 2, -2)
+      border:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
+      border:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
       frame.border = border
     end
   end
 
-  -- create frame shadow if enabled
-  frame.shadow = utils.CreateFrameShadow(frame, config)
+  -- create frame shadow if enabled (apply to bar frame for proper positioning)
+  frame.shadow = utils and utils.CreateFrameShadow and utils.CreateFrameShadow(frame.bar, config)
   
-  -- create frame glow if enabled
-  frame.glow = utils.CreateFrameGlow(frame, config)
+  -- create frame glow if enabled (apply to bar frame for proper positioning)
+  frame.glow = utils and utils.CreateFrameGlow and utils.CreateFrameGlow(frame.bar, config)
 
   return frame
 end
@@ -377,6 +410,10 @@ ui:SetScript("OnUpdate", function()
         -- update frame config reference if it exists
         if root.frames[guid] then
           root.frames[guid].config = config
+          -- Force texture update if statusbar texture has changed
+          if root.frames[guid].bar and config.bar_texture then
+            root.frames[guid].bar:SetStatusBarTexture(config.bar_texture)
+          end
         end
 
         -- update position if required
@@ -400,10 +437,94 @@ ui:SetScript("OnUpdate", function()
       end
     end
 
+    -- update caption visibility based on global setting and unit count
+    if root.caption then
+      local global_config = ShaguScan_db.global_settings or {}
+      -- Ensure global settings have all defaults
+      if utils and utils.MergeGlobalDefaults then
+        global_config = utils.MergeGlobalDefaults(global_config)
+      end
+      
+      -- Store unit count for reference
+      root.unit_count = count
+      
+      if global_config.hide_window_headers then
+        -- Show header only when there are units found OR settings window is open
+        if count > 0 or ui.IsSettingsWindowOpen() then
+          root.caption:Show()
+          root.settings:Show()
+        else
+          root.caption:Hide()
+          root.settings:Hide()
+        end
+      else
+        -- Always show header when setting is disabled
+        root.caption:Show()
+        root.settings:Show()
+      end
+    end
+
     -- update window size
     root:SetWidth(width)
     root:SetHeight(height)
   end
 end)
+
+-- Function to check if any settings window is open
+ui.IsSettingsWindowOpen = function()
+  -- Check if main /scan window is open
+  local mainWindow = getglobal("ShaguScanMainWindow")
+  if mainWindow and mainWindow:IsVisible() then
+    return true
+  end
+  
+  -- Check if main settings dialog is open
+  local mainDialog = getglobal("ShaguScanMainConfigDialog")
+  if mainDialog and mainDialog:IsVisible() then
+    return true
+  end
+  
+  -- Check if any individual window config dialogs are open
+  for caption, _ in pairs(ShaguScan_db.config or {}) do
+    local dialogName = "ShaguScanConfigDialog" .. caption
+    local dialog = getglobal(dialogName)
+    if dialog and dialog:IsVisible() then
+      return true
+    end
+  end
+  
+  return false
+end
+
+-- Function to manually update header visibility for all windows
+ui.UpdateHeaderVisibility = function()
+  if not ui.frames then return end
+  
+  local global_config = ShaguScan_db.global_settings or {}
+  if utils and utils.MergeGlobalDefaults then
+    global_config = utils.MergeGlobalDefaults(global_config)
+  end
+  
+  for caption, root in pairs(ui.frames) do
+    if root.caption then
+      local count = root.unit_count or 0
+      
+      if global_config.hide_window_headers then
+        -- Show header only when there are units found OR settings window is open
+        if count > 0 or ui.IsSettingsWindowOpen() then
+          root.caption:Show()
+          root.settings:Show()
+        else
+          root.caption:Hide()
+          root.settings:Hide()
+        end
+      else
+        -- Always show header when setting is disabled
+        root.caption:Show()
+        root.settings:Show()
+      end
+    end
+  end
+end
 
 ShaguScan.ui = ui
