@@ -239,18 +239,43 @@ widgets.ShowDropdownMenu = function(dropdown)
     end
   end
   
-  -- Set up click-outside detection
-  menu.clickFrame = CreateFrame("Frame", nil, UIParent)
-  menu.clickFrame:SetFrameStrata("BACKGROUND")
-  menu.clickFrame:SetAllPoints(UIParent)
-  menu.clickFrame:EnableMouse(true)
-  menu.clickFrame:SetScript("OnMouseDown", checkClickOutside)
+  -- Click detection only within the parent dialog
+  local dialogParent = dropdown:GetParent()
+  if dialogParent then
+    menu.clickFrame = CreateFrame("Frame", nil, dialogParent)
+    menu.clickFrame:SetFrameStrata("BACKGROUND")
+    menu.clickFrame:SetAllPoints(dialogParent)
+    menu.clickFrame:EnableMouse(true)
+    menu.clickFrame:SetScript("OnMouseDown", function()
+      checkClickOutside()
+    end)
+    
+    -- Clean up click frame when menu hides
+    menu:SetScript("OnHide", function()
+      if this.clickFrame then
+        this.clickFrame:Hide()
+        this.clickFrame = nil
+      end
+    end)
+  end
   
-  -- Clean up click frame when menu hides
-  menu:SetScript("OnHide", function()
-    if this.clickFrame then
-      this.clickFrame:Hide()
-      this.clickFrame = nil
+  -- Also auto-hide after delay as backup
+  menu.hideTimer = GetTime() + 5.0
+  menu:SetScript("OnUpdate", function()
+    if GetTime() > this.hideTimer then
+      this:Hide()
+      this:SetScript("OnUpdate", nil)
+    end
+  end)
+  
+  -- Reset timer when mouse enters menu or dropdown
+  menu:SetScript("OnEnter", function()
+    this.hideTimer = GetTime() + 5.0
+  end)
+  
+  dropdown:SetScript("OnEnter", function()
+    if dropdown.menu then
+      dropdown.menu.hideTimer = GetTime() + 5.0
     end
   end)
   
@@ -267,56 +292,6 @@ widgets.ShowDropdownMenu = function(dropdown)
     this:SetFocus()
   end)
   
-  -- Auto-hide after longer delay when mouse leaves both dropdown and menu
-  menu:SetScript("OnLeave", function()
-    this.leaveTime = GetTime()
-    this:SetScript("OnUpdate", function()
-      if this.leaveTime and GetTime() - this.leaveTime > 1.5 then -- Increased from 0.5 to 1.5 seconds
-        -- Check if mouse is over dropdown or menu (fallback for older WoW versions)
-        local mouseOverDropdown = false
-        local mouseOverMenu = false
-        
-        if MouseIsOver then
-          mouseOverDropdown = MouseIsOver(dropdown)
-          mouseOverMenu = MouseIsOver(this)
-        else
-          -- Manual check for 1.12.1 compatibility
-          local x, y = GetCursorPosition()
-          local scale = UIParent:GetEffectiveScale()
-          x, y = x / scale, y / scale
-          
-          -- Check dropdown bounds
-          local left, right, top, bottom = dropdown:GetLeft(), dropdown:GetRight(), dropdown:GetTop(), dropdown:GetBottom()
-          mouseOverDropdown = (x >= left and x <= right and y >= bottom and y <= top)
-          
-          -- Check menu bounds
-          left, right, top, bottom = this:GetLeft(), this:GetRight(), this:GetTop(), this:GetBottom()
-          mouseOverMenu = (x >= left and x <= right and y >= bottom and y <= top)
-        end
-        
-        -- Only hide if mouse is over neither dropdown nor menu
-        if not mouseOverDropdown and not mouseOverMenu then
-          this:Hide()
-        end
-        this.leaveTime = nil
-        this:SetScript("OnUpdate", nil)
-      end
-    end)
-  end)
-  
-  -- Cancel auto-hide if mouse returns to menu
-  menu:SetScript("OnEnter", function()
-    this.leaveTime = nil
-    this:SetScript("OnUpdate", nil)
-  end)
-  
-  -- Also cancel auto-hide if mouse returns to dropdown
-  dropdown:SetScript("OnEnter", function()
-    if dropdown.menu and dropdown.menu.leaveTime then
-      dropdown.menu.leaveTime = nil
-      dropdown.menu:SetScript("OnUpdate", nil)
-    end
-  end)
 end
 
 ShaguScan.widgets = widgets
