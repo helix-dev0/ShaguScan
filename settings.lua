@@ -382,7 +382,8 @@ settings.OpenConfig = function(caption)
   local config = ShaguScan_db.config[caption]
   local caption = caption
 
-  dialog:SetFrameStrata("DIALOG")
+  dialog:SetFrameStrata("FULLSCREEN_DIALOG")
+  dialog:SetFrameLevel(100)
   dialog:SetPoint("CENTER", 0, 0)
   dialog:SetWidth(320)
   dialog:SetHeight(480)
