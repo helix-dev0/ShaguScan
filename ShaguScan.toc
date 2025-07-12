@@ -8,6 +8,7 @@
 global.lua
 pfui-theme.lua
 utils.lua
+font-manager.lua
 settings-updater.lua
 widget-factory.lua
 widgets.lua

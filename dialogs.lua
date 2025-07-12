@@ -908,7 +908,7 @@ dialogs.OpenConfig = function(caption)
     end
   end
 
-  dialog.text_font = ShaguScan.factory.CreateFontDropdown(backdrop, currentFontName)
+  dialog.text_font = ShaguScan.fonts.CreateFontDropdown(backdrop, currentFontName)
   dialog.text_font:SetPoint("TOPLEFT", backdrop, "TOPLEFT", INPUT_COL, -backdrop.pos)
   dialog.text_font:SetWidth(150)
   dialog.text_font:SetScript("OnEnter", function()

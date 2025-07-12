@@ -108,24 +108,9 @@ end
 function ShaguScan.factory.CreateConfigFontString(parent, config, layer, template)
   local text = parent:CreateFontString(nil, layer or "OVERLAY", template or "GameFontWhite")
   
-  -- Apply font configuration (using existing GetFontPathFromName helper)
+  -- Apply font configuration using centralized font manager
   if config then
-    local fontPath = utils.GetFontPathFromName(config.text_font)
-    if fontPath then
-      text:SetFont(fontPath, config.text_size or 12, config.text_outline or "OUTLINE")
-    else
-      text:SetFont(STANDARD_TEXT_FONT, config.text_size or 12, config.text_outline or "OUTLINE")
-    end
-    
-    -- Apply color (like pfUI's SetTextColor pattern)
-    if config.text_color then
-      text:SetTextColor(
-        config.text_color.r or 1, 
-        config.text_color.g or 1, 
-        config.text_color.b or 1, 
-        config.text_color.a or 1
-      )
-    end
+    ShaguScan.fonts.ApplyFont(text, config)
   end
   
   return text
@@ -179,31 +164,8 @@ end
 -- Consolidates font dropdown creation from widgets.lua, dialogs.lua, mainpanel.lua
 -- Following pfUI's dropdown creation patterns
 function ShaguScan.factory.CreateFontDropdown(parent, selectedFont, onChange)
-  local dropdown = widgets.CreateDropdown(parent, utils.GetPfUIFontList(), selectedFont or "RobotoMono")
-  
-  -- Add GetFontPath method (unified from scattered implementations)
-  dropdown.GetFontPath = function()
-    local selectedName = dropdown.GetValue()
-    if not selectedName then return nil end
-    
-    for i = 1, table.getn(dropdown.fontList) do
-      if dropdown.fontList[i].name == selectedName then
-        return dropdown.fontList[i].path
-      end
-    end
-    return nil
-  end
-  
-  -- Set up change handler
-  if onChange then
-    local originalOnChange = dropdown.onChange
-    dropdown.onChange = function()
-      if originalOnChange then originalOnChange() end
-      onChange()
-    end
-  end
-  
-  return dropdown
+  -- Use centralized font manager for dropdown creation
+  return ShaguScan.fonts.CreateFontDropdown(parent, selectedFont, onChange)
 end
 
 -- Create health bar with text (complete unit bar)

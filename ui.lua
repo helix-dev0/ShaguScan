@@ -145,18 +145,15 @@ ui.BarUpdate = function(elapsed)
   this.text:SetText(text)
   this.text:Show()
   
-  -- Update font and color (fixes font change bug)
-  local fontPath = utils.GetFontPathFromName(this.config.text_font)
-  this.text:SetFont(fontPath, this.config.text_size, this.config.text_outline)
-  this.text:SetTextColor(this.config.text_color.r, this.config.text_color.g, this.config.text_color.b, this.config.text_color.a)
+  -- Update font and color using centralized font manager
+  ShaguScan.fonts.ApplyFont(this.text, this.config)
 
   -- update health text if enabled
   if this.config.health_text_enabled and this.health_text then
     local health_text = utils.FormatHealthText(this.guid, this.config.health_text_format)
     this.health_text:SetText(health_text)
-    -- update font settings if they have changed
-    local fontPath = utils.GetFontPathFromName(this.config.text_font)
-    this.health_text:SetFont(fontPath, this.config.text_size, this.config.text_outline)
+    -- update font settings using centralized font manager
+    ShaguScan.fonts.ApplyFont(this.health_text, this.config)
     this.health_text:Show()
   elseif this.health_text then
     this.health_text:Hide()

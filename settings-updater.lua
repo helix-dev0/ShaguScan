@@ -90,23 +90,8 @@ end
 function ShaguScan.updater.UpdateSingleText(textObj, config, position, parentFrame)
   if not textObj or not parentFrame then return end
   
-  -- Font updates (using existing GetFontPathFromName helper)
-  local fontPath = utils.GetFontPathFromName(config.text_font)
-  if fontPath then
-    textObj:SetFont(fontPath, config.text_size or 12, config.text_outline or "OUTLINE")
-  else
-    textObj:SetFont(STANDARD_TEXT_FONT, config.text_size or 12, config.text_outline or "OUTLINE")
-  end
-  
-  -- Color updates (like pfUI's SetTextColor pattern)
-  if config.text_color then
-    textObj:SetTextColor(
-      config.text_color.r or 1, 
-      config.text_color.g or 1, 
-      config.text_color.b or 1, 
-      config.text_color.a or 1
-    )
-  end
+  -- Font updates using centralized font manager (replaces scattered SetFont calls)
+  ShaguScan.fonts.ApplyFont(textObj, config)
   
   -- Position updates (following pfUI's ClearAllPoints pattern)
   textObj:ClearAllPoints()
