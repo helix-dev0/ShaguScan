@@ -8,6 +8,7 @@
 global.lua
 pfui-theme.lua
 utils.lua
+settings-updater.lua
 widgets.lua
 dialogs.lua
 testbars.lua

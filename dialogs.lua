@@ -287,114 +287,16 @@ dialogs.OpenConfig = function(caption)
           frame.config = new_config
           
           -- Force texture update
-          if new_config.bar_texture then
-            frame.bar:SetStatusBarTexture(new_config.bar_texture)
-          end
-          
-          -- Force background updates (keep red for missing health)
-          if frame.bar.bg then
-            -- Keep red color for missing health indication, only update alpha
-            frame.bar.bg:SetVertexColor(0.8, 0.1, 0.1, new_config.background_alpha or 0.8)
-          end
-          
-          -- Force border updates
-          if frame.border then
-            -- Update border backdrop
-            local backdrop = utils.GetBorderBackdrop(new_config)
-            if backdrop then
-              frame:SetBackdrop(backdrop)
-              frame:SetBackdropBorderColor(new_config.border_color.r, new_config.border_color.g, new_config.border_color.b, new_config.border_color.a)
-            else
-              frame:SetBackdrop(nil) -- Remove border if style is "none"
+          -- Apply all configuration changes using unified settings updater
+          -- This replaces 110+ lines of repeated update code with pfUI-style modular updates
+          if ShaguScan and ShaguScan.updater and ShaguScan.updater.ApplyConfigToFrame then
+            ShaguScan.updater.ApplyConfigToFrame(frame, new_config)
+          else
+            -- Fallback to basic frame update if updater not available
+            frame.config = new_config
+            if frame.OnUpdate then
+              frame.OnUpdate()
             end
-          end
-          
-          -- Force color update using existing bar update logic
-          if frame.OnUpdate then
-            frame.OnUpdate()
-          end
-          
-          -- Force font update for main text
-          if frame.text then
-            if new_config.text_font and new_config.text_font ~= "" then
-              frame.text:SetFont(new_config.text_font, new_config.text_size or 9, new_config.text_outline or "THINOUTLINE")
-            else
-              frame.text:SetFont(STANDARD_TEXT_FONT, new_config.text_size or 9, new_config.text_outline or "THINOUTLINE")
-            end
-            frame.text:SetTextColor(new_config.text_color.r, new_config.text_color.g, new_config.text_color.b, new_config.text_color.a)
-            
-            -- Update text positioning
-            frame.text:ClearAllPoints()
-            if new_config.text_position == "center" then
-              frame.text:SetPoint("CENTER", frame.bar, "CENTER", 0, 0)
-              frame.text:SetJustifyH("CENTER")
-            elseif new_config.text_position == "right" then
-              frame.text:SetPoint("RIGHT", frame.bar, "RIGHT", -2, 0)
-              frame.text:SetJustifyH("RIGHT")
-            else -- left (default)
-              frame.text:SetPoint("LEFT", frame.bar, "LEFT", 2, 0)
-              frame.text:SetJustifyH("LEFT")
-            end
-          end
-          
-          -- Force font update for health text
-          if frame.health_text then
-            if new_config.text_font and new_config.text_font ~= "" then
-              frame.health_text:SetFont(new_config.text_font, new_config.text_size or 9, new_config.text_outline or "THINOUTLINE")
-            else
-              frame.health_text:SetFont(STANDARD_TEXT_FONT, new_config.text_size or 9, new_config.text_outline or "THINOUTLINE")
-            end
-            
-            -- Update health text positioning
-            frame.health_text:ClearAllPoints()
-            if new_config.health_text_position == "center" then
-              frame.health_text:SetPoint("CENTER", frame.bar, "CENTER", 0, 0)
-              frame.health_text:SetJustifyH("CENTER")
-            elseif new_config.health_text_position == "left" then
-              frame.health_text:SetPoint("LEFT", frame.bar, "LEFT", 2, 0)
-              frame.health_text:SetJustifyH("LEFT")
-            else -- right (default)
-              frame.health_text:SetPoint("RIGHT", frame.bar, "RIGHT", -2, 0)
-              frame.health_text:SetJustifyH("RIGHT")
-            end
-          end
-          
-          -- Handle health text enabled/disabled changes
-          if new_config.health_text_enabled and not frame.health_text then
-            -- Create health text if it was just enabled
-            local health_text = frame.bar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-            local fontPath = utils.GetFontPathFromName(new_config.text_font)
-            health_text:SetFont(fontPath, new_config.text_size, new_config.text_outline)
-            health_text:SetTextColor(new_config.text_color.r, new_config.text_color.g, new_config.text_color.b, new_config.text_color.a)
-            
-            -- Position health text
-            if new_config.health_text_position == "center" then
-              health_text:SetPoint("CENTER", frame.bar, "CENTER", 0, 0)
-              health_text:SetJustifyH("CENTER")
-            elseif new_config.health_text_position == "left" then
-              health_text:SetPoint("LEFT", frame.bar, "LEFT", 2, 0)
-              health_text:SetJustifyH("LEFT")
-            else -- right (default)
-              health_text:SetPoint("RIGHT", frame.bar, "RIGHT", -2, 0)
-              health_text:SetJustifyH("RIGHT")
-            end
-            frame.health_text = health_text
-          elseif not new_config.health_text_enabled and frame.health_text then
-            -- Remove health text if it was just disabled
-            frame.health_text:Hide()
-            frame.health_text = nil
-          end
-          
-          -- Handle frame glow changes
-          if new_config.frame_glow and not frame.glow then
-            -- Create glow if it was just enabled
-            frame.glow = utils and utils.CreateFrameGlow and utils.CreateFrameGlow(frame.bar, new_config)
-          elseif not new_config.frame_glow and frame.glow then
-            -- Remove glow if it was just disabled
-            if frame.glow and frame.glow.Hide then
-              frame.glow:Hide()
-            end
-            frame.glow = nil
           end
         end
       end
