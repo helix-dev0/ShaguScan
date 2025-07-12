@@ -9,6 +9,7 @@ global.lua
 pfui-theme.lua
 utils.lua
 settings-updater.lua
+widget-factory.lua
 widgets.lua
 dialogs.lua
 testbars.lua

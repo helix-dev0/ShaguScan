@@ -68,10 +68,6 @@ dialogs.OpenConfig = function(caption)
     }
   end
 
-  -- Main Dialog
-  local dialog = CreateFrame("Frame", "ShaguScanConfigDialog"..caption, UIParent)
-  table.insert(UISpecialFrames, "ShaguScanConfigDialog"..caption)
-
   -- Ensure config exists
   if not ShaguScan_db.config[caption] then
     DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Shagu|cffffffffScan:|cffffaaaa Error: Config not found for window '" .. caption .. "'")
@@ -85,21 +81,12 @@ dialogs.OpenConfig = function(caption)
     ShaguScan_db.config[caption] = config  -- Update the stored config with defaults
   end
 
+  -- Create dialog using widget factory (consolidates backdrop creation)
+  local dialog = ShaguScan.factory.CreateDialog("ShaguScan Configuration: " .. caption, 420, 620, true, "ShaguScanConfigDialog"..caption)
+  table.insert(UISpecialFrames, "ShaguScanConfigDialog"..caption)
+  
   dialog:SetFrameStrata("FULLSCREEN_DIALOG")
   dialog:SetFrameLevel(100)
-  dialog:SetPoint("CENTER", 0, 0)
-  dialog:SetWidth(420) -- Increased width to accommodate scroll bar
-  dialog:SetHeight(620) -- Fixed height for scrolling
-
-  dialog:EnableMouse(true)
-  dialog:RegisterForDrag("LeftButton")
-  dialog:SetMovable(true)
-  dialog:SetScript("OnDragStart", function() this:StartMoving() end)
-  dialog:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
-
-  dialog:SetBackdrop(widgets.backdrop)
-  dialog:SetBackdropColor(.2, .2, .2, 1)
-  dialog:SetBackdropBorderColor(.2, .2, .2, 1)
 
   -- Create scroll frame for content
   local scrollFrame = CreateFrame("ScrollFrame", nil, dialog)
@@ -921,7 +908,7 @@ dialogs.OpenConfig = function(caption)
     end
   end
 
-  dialog.text_font = widgets.CreateFontDropdown(backdrop, currentFontName)
+  dialog.text_font = ShaguScan.factory.CreateFontDropdown(backdrop, currentFontName)
   dialog.text_font:SetPoint("TOPLEFT", backdrop, "TOPLEFT", INPUT_COL, -backdrop.pos)
   dialog.text_font:SetWidth(150)
   dialog.text_font:SetScript("OnEnter", function()

@@ -57,29 +57,9 @@ mainpanel.OpenMainWindow = function()
   end
 
   -- Main Dialog
-  local dialog = CreateFrame("Frame", "ShaguScanMainWindow", UIParent)
+  -- Create main control panel dialog using widget factory (consolidates backdrop creation)
+  local dialog = ShaguScan.factory.CreateDialog("ShaguScan - Main Control Panel", 500, 650, true, "ShaguScanMainWindow")
   table.insert(UISpecialFrames, "ShaguScanMainWindow")
-
-  dialog:SetFrameStrata("DIALOG")
-  dialog:SetPoint("CENTER", 0, 0)
-  dialog:SetWidth(500)
-  dialog:SetHeight(650) -- Increased height for better content fit
-
-  dialog:EnableMouse(true)
-  dialog:RegisterForDrag("LeftButton")
-  dialog:SetMovable(true)
-  dialog:SetScript("OnDragStart", function() this:StartMoving() end)
-  dialog:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
-
-  dialog:SetBackdrop(widgets.backdrop)
-  dialog:SetBackdropColor(.1, .1, .1, 1)
-  dialog:SetBackdropBorderColor(.3, .3, .3, 1)
-
-  -- Title
-  dialog.title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  dialog.title:SetPoint("TOP", dialog, "TOP", 0, -15)
-  dialog.title:SetText("ShaguScan - Main Control Panel")
-  dialog.title:SetTextColor(1, 1, 1, 1)
 
   -- Close button
   dialog.close = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")

@@ -215,38 +215,21 @@ ui.CreateBar = function(parent, guid, config)
   frame:SetScript("OnLeave", ui.BarLeave)
   frame:SetScript("OnUpdate", ui.BarUpdate)
 
-  -- create health bar
-  local bar = CreateFrame("StatusBar", nil, frame)
-  -- Apply statusbar texture from config (user's choice)
-  local texture = config.bar_texture or "Interface\\TargetingFrame\\UI-StatusBar"
-  if texture and texture ~= "" then
-    bar:SetStatusBarTexture(texture)
-  end
-  -- Set initial color and health
-  local hex, r, g, b, a = utils.GetBarColor(guid, config)
-  bar:SetStatusBarColor(r, g, b, config.bar_alpha or 1)
-  -- Also set the status bar frame alpha for better transparency in WoW 1.12
-  bar:SetAlpha(config.bar_alpha or 1)
+  -- create health bar using widget factory (replaces 40+ lines of repeated code)
+  local bar = ShaguScan.factory.CreateStatusBarWithConfig(frame, config, guid)
   bar:SetMinMaxValues(0, UnitHealthMax(guid) or 100)
   bar:SetValue(UnitHealth(guid) or 100)
   bar:SetAllPoints()
+  
+  -- Set initial color based on unit
+  local hex, r, g, b, a = utils.GetBarColor(guid, config)
+  bar:SetStatusBarColor(r, g, b, config.bar_alpha or 1)
   frame.bar = bar
-  
-  -- Create background for the statusbar (shows missing health as red)
-  local bg = bar:CreateTexture(nil, "BACKGROUND")
-  bg:SetAllPoints(bar)
-  bg:SetTexture(texture or "Interface\\TargetingFrame\\UI-StatusBar")
-  -- Use red color for missing health indication
-  bg:SetVertexColor(0.8, 0.1, 0.1, config.background_alpha or 0.8) -- Red background for missing health
-  frame.bar.bg = bg
 
-  -- create caption text
-  local text = frame.bar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-  local fontPath = utils.GetFontPathFromName(config.text_font)
-  text:SetFont(fontPath, config.text_size, config.text_outline)
-  text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
+  -- create caption text using widget factory
+  local text = ShaguScan.factory.CreateConfigFontString(frame, config)
   
-  -- position text based on configuration
+  -- position text based on configuration (following settings-updater pattern)
   if config.text_position == "center" then
     text:SetPoint("CENTER", bar, "CENTER", 0, 0)
     text:SetJustifyH("CENTER")
@@ -259,19 +242,15 @@ ui.CreateBar = function(parent, guid, config)
   end
   frame.text = text
   
-  -- Set initial text and color
+  -- Set initial text
   local initialText = utils.FormatMainText(guid, config.text_format, config)
   text:SetText(initialText)
-  text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
 
-  -- create health text if enabled
+  -- create health text if enabled using widget factory
   if config.health_text_enabled then
-    local health_text = frame.bar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-      local fontPath = utils.GetFontPathFromName(config.text_font)
-    health_text:SetFont(fontPath, config.text_size, config.text_outline)
-    health_text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
+    local health_text = ShaguScan.factory.CreateConfigFontString(frame, config)
     
-    -- position health text based on configuration
+    -- position health text based on configuration (following settings-updater pattern)
     if config.health_text_position == "center" then
       health_text:SetPoint("CENTER", bar, "CENTER", 0, 0)
       health_text:SetJustifyH("CENTER")
