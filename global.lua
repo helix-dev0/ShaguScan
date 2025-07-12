@@ -1,30 +1,16 @@
 ShaguScan = {}
+ShaguScan.core = {} -- Forward declaration for core module
 
 -- Initialize pfUI integration after addon loading
 local function InitializePfUIIntegration()
   -- This will be called after all addons are loaded
-  if ShaguScan.utils and ShaguScan.utils.IsPfUIFontsAvailable() then
-    -- Update default fonts to use pfUI fonts
-    local defaultFont = ShaguScan.utils.GetDefaultPfUIFont()
-    local pfUIColors = ShaguScan.utils.GetPfUIColors()
+  if ShaguScan.utils and ShaguScan.pfui then
+    -- Update to use integrated pfUI styling
+    local defaultFont = "Interface\\AddOns\\ShaguScan\\fonts\\RobotoMono.ttf"
+    local pfUIColors = ShaguScan.utils.GetIntegratedPfUIColors()
     
-    -- Update global template if using defaults
-    if ShaguScan_db.global_settings.default_template.text_font == STANDARD_TEXT_FONT then
-      ShaguScan_db.global_settings.default_template.text_font = defaultFont
-      ShaguScan_db.global_settings.default_template.background_color = pfUIColors.background
-      ShaguScan_db.global_settings.default_template.border_color = pfUIColors.border
-      ShaguScan_db.global_settings.default_template.text_color = pfUIColors.text
-    end
-    
-    -- Update existing window configs that are using default fonts
-    for windowName, config in pairs(ShaguScan_db.config) do
-      if config.text_font == STANDARD_TEXT_FONT then
-        config.text_font = defaultFont
-        config.background_color = pfUIColors.background
-        config.border_color = pfUIColors.border
-        config.text_color = pfUIColors.text
-      end
-    end
+    -- Note: Removed automatic font replacement to preserve user font choices
+    -- The MergeConfigDefaults function now handles proper font defaults
   end
 end
 
@@ -33,9 +19,11 @@ ShaguScan_db = {
   global_settings = {
     -- Default display template for new scan windows
     default_template = {
-      bar_texture = "Interface\\TargetingFrame\\UI-StatusBar",
+      bar_texture = "Interface\\AddOns\\ShaguScan\\img\\bar",
       bar_color_mode = "reaction",
       bar_color_custom = {r=1, g=0.8, b=0.2, a=1},
+      bar_alpha = 1.0,
+      bar_alpha = 1.0,
       background_alpha = 0.9,
       background_color = {r=0.06, g=0.06, b=0.06, a=0.9},
       background_texture = "default",
@@ -69,6 +57,7 @@ ShaguScan_db = {
       bar_texture = "Interface\\TargetingFrame\\UI-StatusBar",
       bar_color_mode = "reaction", -- "reaction", "class", "custom"
       bar_color_custom = {r=1, g=0.8, b=0.2, a=1},
+      bar_alpha = 1.0,
       background_alpha = 0.9,
       background_color = {r=0.06, g=0.06, b=0.06, a=0.9},
       border_style = "default", -- "none", "thin", "thick", "glow", "default"
@@ -93,6 +82,7 @@ ShaguScan_db = {
       bar_texture = "Interface\\TargetingFrame\\UI-StatusBar",
       bar_color_mode = "reaction", -- "reaction", "class", "custom"
       bar_color_custom = {r=1, g=0.8, b=0.2, a=1},
+      bar_alpha = 1.0,
       background_alpha = 0.9,
       background_color = {r=0.06, g=0.06, b=0.06, a=0.9},
       border_style = "default", -- "none", "thin", "thick", "glow", "default"

@@ -31,6 +31,7 @@ mainpanel.OpenMainWindow = function()
         bar_texture = "Interface\\TargetingFrame\\UI-StatusBar",
         bar_color_mode = "reaction",
         bar_color_custom = {r=1, g=0.8, b=0.2, a=1},
+        bar_alpha = 1.0,
         background_alpha = 0.8,
         background_color = {r=0, g=0, b=0, a=1},
         border_style = "default",
@@ -520,12 +521,15 @@ mainpanel.CreateGlobalSettingsPanel = function(parent)
   panel.template_frame_shadow:SetWidth(100)
   panel.pos = panel.pos + 35
 
-  -- Save Button
-  panel.save = CreateFrame("Button", nil, parent, "GameMenuButtonTemplate")
-  panel.save:SetWidth(96)
-  panel.save:SetHeight(20)
-  panel.save:SetFont(STANDARD_TEXT_FONT, 10)
-  panel.save:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -10, 10)
+  -- === ACTION BUTTONS SECTION ===
+  panel.pos = panel.pos + 15
+  
+  -- Save Settings Button (centered, prominent position)
+  panel.save = CreateFrame("Button", nil, panel, "GameMenuButtonTemplate")
+  panel.save:SetWidth(120)
+  panel.save:SetHeight(25)
+  panel.save:SetFont(STANDARD_TEXT_FONT, 11)
+  panel.save:SetPoint("TOP", panel, "TOP", 0, -panel.pos)
   panel.save:SetText("Save Settings")
   panel.save:SetScript("OnClick", function()
     -- Save general settings
@@ -548,17 +552,43 @@ mainpanel.CreateGlobalSettingsPanel = function(parent)
 
     DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Shagu|cffffffffScan:|cffffaaaa Settings saved!")
   end)
+  
+  -- Add tooltip for Save Settings button
+  panel.save:SetScript("OnEnter", function()
+    GameTooltip:SetOwner(this, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine("Save Settings")
+    GameTooltip:AddLine("|cffaaaaaaStores all global settings and", 1, 1, 1)
+    GameTooltip:AddLine("|cffaaaaaaadefault template configuration", 1, 1, 1)
+    GameTooltip:Show()
+  end)
+  panel.save:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+  end)
+  panel.pos = panel.pos + 30
 
-  -- Apply Template Button
-  panel.apply_template = CreateFrame("Button", nil, parent, "GameMenuButtonTemplate")
-  panel.apply_template:SetWidth(120)
-  panel.apply_template:SetHeight(20)
-  panel.apply_template:SetFont(STANDARD_TEXT_FONT, 10)
-  panel.apply_template:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 10, 10)
+  -- Apply Template to All Button (centered below Save Settings)
+  panel.apply_template = CreateFrame("Button", nil, panel, "GameMenuButtonTemplate")
+  panel.apply_template:SetWidth(140)
+  panel.apply_template:SetHeight(25)
+  panel.apply_template:SetFont(STANDARD_TEXT_FONT, 11)
+  panel.apply_template:SetPoint("TOP", panel, "TOP", 0, -panel.pos)
   panel.apply_template:SetText("Apply Template to All")
   panel.apply_template:SetScript("OnClick", function()
     mainpanel.ApplyTemplateToAll()
     DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Shagu|cffffffffScan:|cffffaaaa Template applied to all windows!")
+  end)
+  
+  -- Add tooltip for Apply Template button
+  panel.apply_template:SetScript("OnEnter", function()
+    GameTooltip:SetOwner(this, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine("Apply Template to All")
+    GameTooltip:AddLine("|cffaaaaaaApplies the current default template", 1, 1, 1)
+    GameTooltip:AddLine("|cffaaaaaaavisual settings to ALL existing", 1, 1, 1)
+    GameTooltip:AddLine("|cffaaaaaaaascan windows at once", 1, 1, 1)
+    GameTooltip:Show()
+  end)
+  panel.apply_template:SetScript("OnLeave", function()
+    GameTooltip:Hide()
   end)
 
   return panel

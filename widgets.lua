@@ -40,6 +40,41 @@ widgets.CreateLabel = function(parent, text)
   return label
 end
 
+widgets.CreateSectionHeader = function(parent, text)
+  -- Create container frame for header with underline
+  local container = CreateFrame("Frame", nil, parent)
+  container:SetHeight(24)
+  container:SetWidth(350) -- Set explicit width to ensure visibility
+  
+  -- Main header text
+  local header = container:CreateFontString(nil, 'HIGH', 'GameFontNormalLarge')
+  header:SetFont(STANDARD_TEXT_FONT, 12, "OUTLINE")
+  header:SetText(text)
+  header:SetPoint("TOPLEFT", container, "TOPLEFT", 0, -2)
+  
+  -- Use pfUI accent color for headers
+  if utils and utils.GetPfUIColors then
+    local success, pfui_colors = pcall(utils.GetPfUIColors)
+    if success and pfui_colors and pfui_colors.accent then
+      header:SetTextColor(pfui_colors.accent.r, pfui_colors.accent.g, pfui_colors.accent.b, pfui_colors.accent.a)
+    else
+      header:SetTextColor(0.2, 1, 0.8, 1) -- Bright teal fallback
+    end
+  else
+    header:SetTextColor(0.2, 1, 0.8, 1) -- Bright teal fallback
+  end
+  
+  -- Add subtle underline for better visual separation
+  local underline = container:CreateTexture(nil, "BACKGROUND")
+  underline:SetHeight(1)
+  underline:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -4)
+  underline:SetPoint("TOPRIGHT", container, "TOPRIGHT", -20, -18)
+  underline:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
+  underline:SetVertexColor(0.3, 0.8, 0.6, 0.8) -- Subtle teal underline
+  
+  return container
+end
+
 widgets.CreateTextBox = function(parent, text)
   local textbox = CreateFrame("EditBox", nil, parent)
   textbox.ShowTooltip = widgets.ShowTooltip

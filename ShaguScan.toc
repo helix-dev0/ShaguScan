@@ -6,6 +6,7 @@
 ## SavedVariablesPerCharacter: ShaguScan_db
 
 global.lua
+pfui-theme.lua
 utils.lua
 widgets.lua
 dialogs.lua

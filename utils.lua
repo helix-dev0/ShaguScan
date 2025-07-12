@@ -118,10 +118,11 @@ utils.rgbhex = function(r, g, b, a)
 end
 
 utils.GetReactionColor = function(unitstr)
-  local color = UnitReactionColor[UnitReaction(unitstr, "player")]
-  local r, g, b = .8, .8, .8
-
-  if color then
+  local reaction = UnitReaction(unitstr, "player")
+  local r, g, b = 1, 0.2, 0.2 -- Default to red (hostile)
+  
+  if reaction and UnitReactionColor[reaction] then
+    local color = UnitReactionColor[reaction]
     r, g, b = color.r, color.g, color.b
   end
 
@@ -136,39 +137,18 @@ utils.GetUnitColor = function(unitstr)
 
     if class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class] then
       r, g, b = RAID_CLASS_COLORS[class].r, RAID_CLASS_COLORS[class].g, RAID_CLASS_COLORS[class].b
-      
-      -- Debug output for class colors
-      if ShaguScan_db.global_settings and ShaguScan_db.global_settings.debug_mode then
-        DEFAULT_CHAT_FRAME:AddMessage("ShaguScan: Class color for " .. tostring(unitstr) .. " (" .. tostring(class) .. "): " .. tostring(r) .. ", " .. tostring(g) .. ", " .. tostring(b))
+    elseif class then
+      -- Fallback class colors
+      if class == "WARRIOR" then r, g, b = 0.78, 0.61, 0.43
+      elseif class == "PALADIN" then r, g, b = 0.96, 0.55, 0.73
+      elseif class == "HUNTER" then r, g, b = 0.67, 0.83, 0.45
+      elseif class == "ROGUE" then r, g, b = 1, 0.96, 0.41
+      elseif class == "PRIEST" then r, g, b = 1, 1, 1
+      elseif class == "SHAMAN" then r, g, b = 0, 0.44, 0.87
+      elseif class == "MAGE" then r, g, b = 0.41, 0.8, 0.94
+      elseif class == "WARLOCK" then r, g, b = 0.58, 0.51, 0.79
+      elseif class == "DRUID" then r, g, b = 1, 0.49, 0.04
       end
-    else
-      -- Fallback class colors if RAID_CLASS_COLORS not available
-      if class then
-        if class == "WARRIOR" then r, g, b = 0.78, 0.61, 0.43
-        elseif class == "PALADIN" then r, g, b = 0.96, 0.55, 0.73
-        elseif class == "HUNTER" then r, g, b = 0.67, 0.83, 0.45
-        elseif class == "ROGUE" then r, g, b = 1, 0.96, 0.41
-        elseif class == "PRIEST" then r, g, b = 1, 1, 1
-        elseif class == "SHAMAN" then r, g, b = 0, 0.44, 0.87
-        elseif class == "MAGE" then r, g, b = 0.41, 0.8, 0.94
-        elseif class == "WARLOCK" then r, g, b = 0.58, 0.51, 0.79
-        elseif class == "DRUID" then r, g, b = 1, 0.49, 0.04
-        end
-        
-        if ShaguScan_db.global_settings and ShaguScan_db.global_settings.debug_mode then
-          DEFAULT_CHAT_FRAME:AddMessage("ShaguScan: Fallback class color for " .. tostring(unitstr) .. " (" .. tostring(class) .. "): " .. tostring(r) .. ", " .. tostring(g) .. ", " .. tostring(b))
-        end
-      else
-        -- Debug: why no class?
-        if ShaguScan_db.global_settings and ShaguScan_db.global_settings.debug_mode then
-          DEFAULT_CHAT_FRAME:AddMessage("ShaguScan: No class found for " .. tostring(unitstr) .. " - UnitClass returned nil")
-        end
-      end
-    end
-  else
-    -- Debug: not a player
-    if ShaguScan_db.global_settings and ShaguScan_db.global_settings.debug_mode then
-      DEFAULT_CHAT_FRAME:AddMessage("ShaguScan: Unit " .. tostring(unitstr) .. " is not a player")
     end
   end
 
@@ -188,7 +168,11 @@ end
 
 utils.GetLevelString = function(unitstr)
   local level = UnitLevel(unitstr)
-  if level == -1 then level = "??" end
+  if not level or level == -1 then 
+    level = "??" 
+  else
+    level = tostring(level)
+  end
 
   local elite = UnitClassification(unitstr)
   if elite == "worldboss" then
@@ -207,11 +191,13 @@ end
 utils.GetBarColor = function(unitstr, config)
   if config.bar_color_mode == "custom" then
     local c = config.bar_color_custom
-    return utils.rgbhex(c.r, c.g, c.b, c.a), c.r, c.g, c.b, c.a
+    return utils.rgbhex(c.r, c.g, c.b, c.a), c.r, c.g, c.b, c.a or 1
   elseif config.bar_color_mode == "class" then
-    return utils.GetUnitColor(unitstr)
+    local hex, r, g, b = utils.GetUnitColor(unitstr)
+    return hex, r, g, b, 1 -- always return alpha of 1
   else -- reaction mode (default)
-    return utils.GetReactionColor(unitstr)
+    local hex, r, g, b = utils.GetReactionColor(unitstr)
+    return hex, r, g, b, 1 -- always return alpha of 1
   end
 end
 
@@ -262,6 +248,11 @@ utils.FormatMainText = function(unitstr, format, config)
   local level = utils.GetLevelString(unitstr)
   local level_color = utils.GetLevelColor(unitstr)
   local name = UnitName(unitstr)
+  
+  -- Simple fallback for empty names
+  if not name or name == "" then
+    name = "Unknown"
+  end
   
   if format == "name_only" then
     return name
@@ -326,6 +317,7 @@ utils.MergeConfigDefaults = function(config)
     bar_texture = utils.GetDefaultStatusbarTexture(),
     bar_color_mode = "reaction",
     bar_color_custom = {r=1, g=0.8, b=0.2, a=1},
+    bar_alpha = 1.0,
     background_alpha = 0.9,
     background_color = pfui_colors.background,
     border_style = "default",
@@ -432,6 +424,7 @@ utils.GetDefaultPfUIFont = function()
   return STANDARD_TEXT_FONT
 end
 
+
 utils.GetPfUIFontList = function()
   local fonts = {}
   local index = 1
@@ -442,36 +435,54 @@ utils.GetPfUIFontList = function()
   fonts[index] = {name = "Damage", path = DAMAGE_TEXT_FONT, preview = true}
   index = index + 1
   
-  -- Add pfUI fonts if available (most popular only)
+  -- Add top 5 most popular and readable fonts for UI text
+  local popular_fonts = {
+    ["RobotoMono"] = "Interface\\AddOns\\ShaguScan\\fonts\\RobotoMono.ttf",
+    ["PT Sans"] = "Interface\\AddOns\\ShaguScan\\fonts\\PT-Sans-Narrow-Regular.ttf",
+    ["Continuum"] = "Interface\\AddOns\\ShaguScan\\fonts\\Continuum.ttf"
+  }
+  
+  -- Add integrated fonts to list
+  for name, path in pairs(popular_fonts) do
+    fonts[index] = {name = name, path = path, preview = true}
+    index = index + 1
+  end
+  
+  -- Add only the 2 most popular pfUI fonts if available
   if pfUI and pfUI.font then
-    -- Most popular pfUI fonts only
-    local pfUI_fonts = {
+    local top_pfUI_fonts = {
       ["Roboto"] = "Interface\\AddOns\\pfUI\\fonts\\Roboto.ttf",
-      ["Roboto Condensed"] = "Interface\\AddOns\\pfUI\\fonts\\RobotoCondensed.ttf", 
-      ["Homespun"] = "Interface\\AddOns\\pfUI\\fonts\\Homespun.ttf",
-      ["PT Sans"] = "Interface\\AddOns\\pfUI\\fonts\\PTSans.ttf",
-      ["Continuum"] = "Interface\\AddOns\\pfUI\\fonts\\Continuum.ttf",
-      ["Myriad"] = "Interface\\AddOns\\pfUI\\fonts\\Myriad.ttf",
-      ["Vermin"] = "Interface\\AddOns\\pfUI\\fonts\\Vermin.ttf",
-      ["Pixel"] = "Interface\\AddOns\\pfUI\\fonts\\Pixel.ttf",
-      ["Diablo"] = "Interface\\AddOns\\pfUI\\fonts\\Diablo.ttf",
-      ["Fritz"] = "Interface\\AddOns\\pfUI\\fonts\\Fritz.ttf"
+      ["Homespun"] = "Interface\\AddOns\\pfUI\\fonts\\Homespun.ttf"
     }
     
-    -- Add pfUI fonts to list
-    for name, path in pairs(pfUI_fonts) do
-      fonts[index] = {name = name, path = path, preview = true}
-      index = index + 1
-    end
-  elseif utils.IsPfUIFontsAvailable() then
-    -- Fallback to old method if pfUI global not available
-    for name, path in pairs(utils.pfUI_fonts) do
+    for name, path in pairs(top_pfUI_fonts) do
       fonts[index] = {name = name, path = path, preview = true}
       index = index + 1
     end
   end
   
   return fonts
+end
+
+utils.GetFontPathFromName = function(fontName)
+  -- Convert font name to path, handling both names and paths
+  if not fontName then return STANDARD_TEXT_FONT end
+  
+  -- If it's already a path (contains backslash), return as-is
+  if string.find(fontName, "\\") then
+    return fontName
+  end
+  
+  -- Convert name to path
+  local fontList = utils.GetPfUIFontList()
+  for i = 1, table.getn(fontList) do
+    if fontList[i].name == fontName then
+      return fontList[i].path
+    end
+  end
+  
+  -- Fallback to standard font
+  return STANDARD_TEXT_FONT
 end
 
 -- Pre-defined backdrop configurations for performance
@@ -498,7 +509,22 @@ utils.GetPfUIStatusbarTextures = function()
   textures[index] = {name = "Default", path = "Interface\\TargetingFrame\\UI-StatusBar"}
   index = index + 1
   
-  -- Add pfUI statusbar textures if available (most popular only)
+  -- Add integrated pfUI-style statusbar textures (now included with ShaguScan)
+  local integrated_textures = {
+    ["pfUI Bar"] = "Interface\\AddOns\\ShaguScan\\img\\bar",
+    ["pfUI ElvUI Style"] = "Interface\\AddOns\\ShaguScan\\img\\bar_elvui",
+    ["pfUI Gradient"] = "Interface\\AddOns\\ShaguScan\\img\\bar_gradient",
+    ["pfUI Striped"] = "Interface\\AddOns\\ShaguScan\\img\\bar_striped",
+    ["pfUI TukUI Style"] = "Interface\\AddOns\\ShaguScan\\img\\bar_tukui"
+  }
+  
+  -- Add integrated textures to list
+  for name, path in pairs(integrated_textures) do
+    textures[index] = {name = name, path = path}
+    index = index + 1
+  end
+  
+  -- Legacy: Add external pfUI textures if available (for backward compatibility)
   if pfUI and pfUI.media then
     -- Most popular pfUI statusbar textures
     local pfUI_textures = {
@@ -544,15 +570,35 @@ utils.GetPfUIColors = function()
 end
 
 utils.GetDefaultStatusbarTexture = function()
-  -- Return pfUI statusbar texture if available, otherwise WoW default
-  if pfUI and pfUI.media then
-    if pfUI.media["statusbar"] then
-      return pfUI.media["statusbar"]
-    elseif pfUI.media["texture"] then
-      return pfUI.media["texture"]
-    end
+  -- Return integrated pfUI bar texture as default, with fallback
+  return "Interface\\AddOns\\ShaguScan\\img\\bar"
+end
+
+-- Enhanced pfUI styling function using our integrated system
+utils.ApplyPfUIStyle = function(frame, config)
+  if not frame or not ShaguScan.pfui then return end
+  
+  -- Use our integrated pfUI styling system
+  ShaguScan.pfui.StyleFrame(frame, config)
+end
+
+-- Check if integrated pfUI styling is available
+utils.HasIntegratedPfUIStyle = function()
+  return ShaguScan.pfui ~= nil
+end
+
+-- Get integrated pfUI default colors
+utils.GetIntegratedPfUIColors = function()
+  if ShaguScan.pfui then
+    return {
+      background = {r=0.06, g=0.06, b=0.06, a=0.9},
+      border = {r=0.2, g=0.2, b=0.2, a=1},
+      text = {r=0.8, g=0.8, b=0.8, a=1},
+      accent = {r=0.2, g=1, b=0.8, a=1},
+      hover = {r=1, g=1, b=1, a=1}
+    }
   end
-  return "Interface\\TargetingFrame\\UI-StatusBar"
+  return utils.GetPfUIColors() -- fallback to existing function
 end
 
 ShaguScan.utils = utils
