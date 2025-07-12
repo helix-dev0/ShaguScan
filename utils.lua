@@ -317,6 +317,7 @@ utils.MergeConfigDefaults = function(config)
     bar_texture = utils.GetDefaultStatusbarTexture(),
     bar_color_mode = "reaction",
     bar_color_custom = {r=1, g=0.8, b=0.2, a=1},
+    bar_alpha = 1.0,
     background_alpha = 0.9,
     background_color = pfui_colors.background,
     border_style = "default",
@@ -423,6 +424,7 @@ utils.GetDefaultPfUIFont = function()
   return STANDARD_TEXT_FONT
 end
 
+
 utils.GetPfUIFontList = function()
   local fonts = {}
   local index = 1
@@ -460,6 +462,27 @@ utils.GetPfUIFontList = function()
   end
   
   return fonts
+end
+
+utils.GetFontPathFromName = function(fontName)
+  -- Convert font name to path, handling both names and paths
+  if not fontName then return STANDARD_TEXT_FONT end
+  
+  -- If it's already a path (contains backslash), return as-is
+  if string.find(fontName, "\\") then
+    return fontName
+  end
+  
+  -- Convert name to path
+  local fontList = utils.GetPfUIFontList()
+  for i = 1, table.getn(fontList) do
+    if fontList[i].name == fontName then
+      return fontList[i].path
+    end
+  end
+  
+  -- Fallback to standard font
+  return STANDARD_TEXT_FONT
 end
 
 -- Pre-defined backdrop configurations for performance

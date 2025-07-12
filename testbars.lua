@@ -284,8 +284,10 @@ testbars.CreateTestBar = function(config, caption)
           end
         end
         
-        -- Force alpha to 1.0 for visibility and apply colors
-        this.bar:SetStatusBarColor(r, g, b, 1.0)
+        -- Apply colors with configured alpha
+        this.bar:SetStatusBarColor(r, g, b, config.bar_alpha or 1.0)
+        -- Also set frame alpha for better transparency
+        this.bar:SetAlpha(config.bar_alpha or 1.0)
         
         -- Debug: Print what we're setting
         if ShaguScan_db.global_settings and ShaguScan_db.global_settings.debug_mode then

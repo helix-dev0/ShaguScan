@@ -125,7 +125,9 @@ ui.BarUpdate = function(elapsed)
 
   -- update health bar color based on configuration
   local hex, r, g, b, a = utils.GetBarColor(this.guid, this.config)
-  this.bar:SetStatusBarColor(r, g, b, a or 1) -- ensure alpha is always 1
+  this.bar:SetStatusBarColor(r, g, b, this.config.bar_alpha or 1)
+  -- Also update frame alpha for better transparency
+  this.bar:SetAlpha(this.config.bar_alpha or 1)
   
   -- Debug color
   if ShaguScan_db.global_settings.debug_mode and not this.debug_color_logged then
@@ -144,11 +146,8 @@ ui.BarUpdate = function(elapsed)
   this.text:Show()
   
   -- Update font and color (fixes font change bug)
-  if this.config.text_font and this.config.text_font ~= "" then
-    this.text:SetFont(this.config.text_font, this.config.text_size, this.config.text_outline)
-  else
-    this.text:SetFont(STANDARD_TEXT_FONT, this.config.text_size, this.config.text_outline)
-  end
+  local fontPath = utils.GetFontPathFromName(this.config.text_font)
+  this.text:SetFont(fontPath, this.config.text_size, this.config.text_outline)
   this.text:SetTextColor(this.config.text_color.r, this.config.text_color.g, this.config.text_color.b, this.config.text_color.a)
 
   -- update health text if enabled
@@ -156,9 +155,8 @@ ui.BarUpdate = function(elapsed)
     local health_text = utils.FormatHealthText(this.guid, this.config.health_text_format)
     this.health_text:SetText(health_text)
     -- update font settings if they have changed
-    if this.config.text_font and this.config.text_font ~= "" then
-      this.health_text:SetFont(this.config.text_font, this.config.text_size, this.config.text_outline)
-    end
+    local fontPath = utils.GetFontPathFromName(this.config.text_font)
+    this.health_text:SetFont(fontPath, this.config.text_size, this.config.text_outline)
     this.health_text:Show()
   elseif this.health_text then
     this.health_text:Hide()
@@ -226,28 +224,26 @@ ui.CreateBar = function(parent, guid, config)
   end
   -- Set initial color and health
   local hex, r, g, b, a = utils.GetBarColor(guid, config)
-  bar:SetStatusBarColor(r, g, b, 1)
+  bar:SetStatusBarColor(r, g, b, config.bar_alpha or 1)
+  -- Also set the status bar frame alpha for better transparency in WoW 1.12
+  bar:SetAlpha(config.bar_alpha or 1)
   bar:SetMinMaxValues(0, UnitHealthMax(guid) or 100)
   bar:SetValue(UnitHealth(guid) or 100)
   bar:SetAllPoints()
   frame.bar = bar
   
-  -- Create background for the statusbar
+  -- Create background for the statusbar (shows missing health as red)
   local bg = bar:CreateTexture(nil, "BACKGROUND")
   bg:SetAllPoints(bar)
   bg:SetTexture(texture or "Interface\\TargetingFrame\\UI-StatusBar")
-  -- Use configured background color
-  local bgc = config.background_color
-  bg:SetVertexColor(bgc.r, bgc.g, bgc.b, config.background_alpha or bgc.a)
+  -- Use red color for missing health indication
+  bg:SetVertexColor(0.8, 0.1, 0.1, config.background_alpha or 0.8) -- Red background for missing health
   frame.bar.bg = bg
 
   -- create caption text
   local text = frame.bar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-  if config.text_font and config.text_font ~= "" then
-    text:SetFont(config.text_font, config.text_size, config.text_outline)
-  else
-    text:SetFont(STANDARD_TEXT_FONT, config.text_size, config.text_outline)
-  end
+  local fontPath = utils.GetFontPathFromName(config.text_font)
+  text:SetFont(fontPath, config.text_size, config.text_outline)
   text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
   
   -- position text based on configuration
@@ -271,11 +267,8 @@ ui.CreateBar = function(parent, guid, config)
   -- create health text if enabled
   if config.health_text_enabled then
     local health_text = frame.bar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-    if config.text_font and config.text_font ~= "" then
-      health_text:SetFont(config.text_font, config.text_size, config.text_outline)
-    else
-      health_text:SetFont(STANDARD_TEXT_FONT, config.text_size, config.text_outline)
-    end
+      local fontPath = utils.GetFontPathFromName(config.text_font)
+    health_text:SetFont(fontPath, config.text_size, config.text_outline)
     health_text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
     
     -- position health text based on configuration
