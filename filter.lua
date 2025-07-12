@@ -3,7 +3,7 @@ if ShaguScan.disabled then return end
 local filter = { }
 
 filter.player = function(unit)
-  return UnitIsPlayer(unit)
+  return UnitIsPlayer(unit) and not UnitIsUnit(unit, "player")
 end
 
 filter.npc = function(unit)
@@ -224,6 +224,8 @@ end
 filter.range = function(unit)
   return CheckInteractDistance(unit, 4)
 end
+
+ShaguScan.filter = filter
 
 filter.level = function(unit, args)
   local level = tonumber(args)

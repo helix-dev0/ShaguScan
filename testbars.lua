@@ -121,37 +121,13 @@ testbars.CreateTestBar = function(config, caption)
     scanWindow:SetHeight(config.height + 40)
     scanWindow:SetScale(config.scale)
     
-    -- Apply background styling with pfUI integration (ensure it's visible)
+    -- Apply background styling using integrated pfUI system
     local bg_alpha = math.max(config.background_alpha, 0.5) -- Make background at least 50% visible for test
     if bg_alpha > 0 then
-      if pfUI and pfUI.api and pfUI.api.CreateBackdrop then
-        -- Use pfUI's backdrop system for test window
-        local success = pcall(pfUI.api.CreateBackdrop, scanWindow, nil, true)
-        if success and scanWindow.backdrop then
-          scanWindow.backdrop:SetBackdropColor(config.background_color.r, config.background_color.g, config.background_color.b, bg_alpha)
-          scanWindow.backdrop:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
-        end
-      else
-        -- Fallback to regular backdrop
-        local backdrop = {
-          bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-          tile = true, tileSize = 16, 
-          insets = { left = 2, right = 2, top = 2, bottom = 2 }
-        }
-        
-        local borderBackdrop = utils.GetBorderBackdrop(config)
-        if borderBackdrop then
-          backdrop.edgeFile = borderBackdrop.edgeFile
-          backdrop.edgeSize = borderBackdrop.edgeSize
-          backdrop.insets = borderBackdrop.insets
-        end
-        
-        scanWindow:SetBackdrop(backdrop)
-        scanWindow:SetBackdropColor(config.background_color.r, config.background_color.g, config.background_color.b, bg_alpha)
-        if borderBackdrop then
-          scanWindow:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
-        end
-      end
+      -- Create temporary config with higher alpha for test visibility
+      local testConfig = utils.DeepCopy(config)
+      testConfig.background_color.a = bg_alpha
+      utils.ApplyPfUIStyle(scanWindow, testConfig)
     end
     
     -- Add frame effects if enabled

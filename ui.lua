@@ -115,22 +115,50 @@ ui.BarUpdate = function(elapsed)
   this.bar:SetValue(UnitHealth(this.guid))
 
   -- update statusbar texture based on configuration
-  if this.config.bar_texture then
+  if this.config.bar_texture and this.config.bar_texture ~= "" then
     this.bar:SetStatusBarTexture(this.config.bar_texture)
+    -- Also update background texture
+    if this.bar.bg then
+      this.bar.bg:SetTexture(this.config.bar_texture)
+    end
   end
 
   -- update health bar color based on configuration
   local hex, r, g, b, a = utils.GetBarColor(this.guid, this.config)
-  this.bar:SetStatusBarColor(r, g, b, a)
+  this.bar:SetStatusBarColor(r, g, b, a or 1) -- ensure alpha is always 1
+  
+  -- Debug color
+  if ShaguScan_db.global_settings.debug_mode and not this.debug_color_logged then
+    local isPlayer = UnitIsPlayer(this.guid)
+    local _, class = UnitClass(this.guid)
+    DEFAULT_CHAT_FRAME:AddMessage("Color Debug: GUID=" .. tostring(this.guid) .. " mode=" .. tostring(this.config.bar_color_mode))
+    DEFAULT_CHAT_FRAME:AddMessage("  IsPlayer=" .. tostring(isPlayer) .. " Class=" .. tostring(class))
+    DEFAULT_CHAT_FRAME:AddMessage("  Final Color: r=" .. tostring(r) .. " g=" .. tostring(g) .. " b=" .. tostring(b))
+    this.debug_color_logged = true
+  end
+  
 
   -- update caption text based on configuration
   local text = utils.FormatMainText(this.guid, this.config.text_format, this.config)
   this.text:SetText(text)
+  this.text:Show()
+  
+  -- Update font and color (fixes font change bug)
+  if this.config.text_font and this.config.text_font ~= "" then
+    this.text:SetFont(this.config.text_font, this.config.text_size, this.config.text_outline)
+  else
+    this.text:SetFont(STANDARD_TEXT_FONT, this.config.text_size, this.config.text_outline)
+  end
+  this.text:SetTextColor(this.config.text_color.r, this.config.text_color.g, this.config.text_color.b, this.config.text_color.a)
 
   -- update health text if enabled
   if this.config.health_text_enabled and this.health_text then
     local health_text = utils.FormatHealthText(this.guid, this.config.health_text_format)
     this.health_text:SetText(health_text)
+    -- update font settings if they have changed
+    if this.config.text_font and this.config.text_font ~= "" then
+      this.health_text:SetFont(this.config.text_font, this.config.text_size, this.config.text_outline)
+    end
     this.health_text:Show()
   elseif this.health_text then
     this.health_text:Hide()
@@ -148,8 +176,9 @@ ui.BarUpdate = function(elapsed)
     end
   end
 
-  -- show raid icon if existing
-  if GetRaidTargetIndex(this.guid) then
+  -- show raid icon if existing (not for players)
+  if GetRaidTargetIndex(this.guid) and not UnitIsPlayer(this.guid) then
+    this.icon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
     SetRaidTargetIconTexture(this.icon, GetRaidTargetIndex(this.guid))
     this.icon:Show()
   else
@@ -157,7 +186,7 @@ ui.BarUpdate = function(elapsed)
   end
 
   -- update target indicator
-  if UnitIsUnit("target", this.guid) then
+  if UnitExists("target") and UnitIsUnit("target", this.guid) then
     this.target_left:Show()
     this.target_right:Show()
   else
@@ -192,16 +221,33 @@ ui.CreateBar = function(parent, guid, config)
   local bar = CreateFrame("StatusBar", nil, frame)
   -- Apply statusbar texture from config (user's choice)
   local texture = config.bar_texture or "Interface\\TargetingFrame\\UI-StatusBar"
-  bar:SetStatusBarTexture(texture)
-  bar:SetStatusBarColor(1, .8, .2, 1)
-  bar:SetMinMaxValues(0, 100)
-  bar:SetValue(20)
+  if texture and texture ~= "" then
+    bar:SetStatusBarTexture(texture)
+  end
+  -- Set initial color and health
+  local hex, r, g, b, a = utils.GetBarColor(guid, config)
+  bar:SetStatusBarColor(r, g, b, 1)
+  bar:SetMinMaxValues(0, UnitHealthMax(guid) or 100)
+  bar:SetValue(UnitHealth(guid) or 100)
   bar:SetAllPoints()
   frame.bar = bar
+  
+  -- Create background for the statusbar
+  local bg = bar:CreateTexture(nil, "BACKGROUND")
+  bg:SetAllPoints(bar)
+  bg:SetTexture(texture or "Interface\\TargetingFrame\\UI-StatusBar")
+  -- Use configured background color
+  local bgc = config.background_color
+  bg:SetVertexColor(bgc.r, bgc.g, bgc.b, config.background_alpha or bgc.a)
+  frame.bar.bg = bg
 
   -- create caption text
-  local text = frame.bar:CreateFontString(nil, "HIGH", "GameFontWhite")
-  text:SetFont(config.text_font, config.text_size, config.text_outline)
+  local text = frame.bar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
+  if config.text_font and config.text_font ~= "" then
+    text:SetFont(config.text_font, config.text_size, config.text_outline)
+  else
+    text:SetFont(STANDARD_TEXT_FONT, config.text_size, config.text_outline)
+  end
   text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
   
   -- position text based on configuration
@@ -216,11 +262,20 @@ ui.CreateBar = function(parent, guid, config)
     text:SetJustifyH("LEFT")
   end
   frame.text = text
+  
+  -- Set initial text and color
+  local initialText = utils.FormatMainText(guid, config.text_format, config)
+  text:SetText(initialText)
+  text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
 
   -- create health text if enabled
   if config.health_text_enabled then
-    local health_text = frame.bar:CreateFontString(nil, "HIGH", "GameFontWhite")
-    health_text:SetFont(config.text_font, config.text_size, config.text_outline)
+    local health_text = frame.bar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
+    if config.text_font and config.text_font ~= "" then
+      health_text:SetFont(config.text_font, config.text_size, config.text_outline)
+    else
+      health_text:SetFont(STANDARD_TEXT_FONT, config.text_size, config.text_outline)
+    end
     health_text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
     
     -- position health text based on configuration
@@ -254,7 +309,7 @@ ui.CreateBar = function(parent, guid, config)
   icon:SetWidth(16)
   icon:SetHeight(16)
   icon:SetPoint("RIGHT", frame, "RIGHT", -2, 0)
-  icon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
+  -- Don't set texture here - only set it when showing the icon
   icon:Hide()
   frame.icon = icon
 
@@ -275,58 +330,15 @@ ui.CreateBar = function(parent, guid, config)
   target_right:Hide()
   frame.target_right = target_right
 
-  -- create frame backdrops based on configuration
-  if pfUI and pfUI.api and pfUI.api.CreateBackdrop then
-    -- Use pfUI's backdrop system on the parent frame to avoid interfering with statusbar
-    local success = pcall(pfUI.api.CreateBackdrop, frame, nil, true)
-    if success and frame.backdrop then
-      frame.border = frame.backdrop
-      
-      -- Apply pfUI-style colors
-      local bg_color = config.background_color
-      frame.backdrop:SetBackdropColor(bg_color.r, bg_color.g, bg_color.b, config.background_alpha)
-      frame.backdrop:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
-    else
-      -- Fallback to regular backdrop on parent frame
-      local bg_texture = utils.GetBackgroundTexture(config.background_texture) or ui.background
-      if bg_texture then
-        frame:SetBackdrop(bg_texture)
-        frame:SetBackdropColor(config.background_color.r, config.background_color.g, config.background_color.b, config.background_alpha)
-      end
-      
-      -- create border if not disabled
-      local border_backdrop = utils and utils.GetBorderBackdrop and utils.GetBorderBackdrop(config)
-      if border_backdrop then
-        local border = CreateFrame("Frame", nil, frame)
-        border:SetBackdrop(border_backdrop)
-        border:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
-        border:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
-        border:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
-        frame.border = border
-      end
-    end
-  else
-    -- Use configurable background texture on parent frame
-    local bg_texture = utils.GetBackgroundTexture(config.background_texture) or ui.background
-    if bg_texture then
-      frame:SetBackdrop(bg_texture)
-      frame:SetBackdropColor(config.background_color.r, config.background_color.g, config.background_color.b, config.background_alpha)
-    end
-
-    -- create border if not disabled
-    local border_backdrop = utils and utils.GetBorderBackdrop and utils.GetBorderBackdrop(config)
-    if border_backdrop then
-      local border = CreateFrame("Frame", nil, frame)
-      border:SetBackdrop(border_backdrop)
-      border:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
-      border:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
-      border:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
-      frame.border = border
-    end
+  -- Create border backdrop (no background for health bars)
+  local backdrop = utils.GetBorderBackdrop(config)
+  if backdrop then
+    frame:SetBackdrop(backdrop)
+    frame:SetBackdropBorderColor(config.border_color.r, config.border_color.g, config.border_color.b, config.border_color.a)
   end
+  frame.border = frame
 
-  -- create frame shadow if enabled (apply to bar frame for proper positioning)
-  frame.shadow = utils and utils.CreateFrameShadow and utils.CreateFrameShadow(frame.bar, config)
+  -- Shadow is now handled by integrated pfUI styling system
   
   -- create frame glow if enabled (apply to bar frame for proper positioning)
   frame.glow = utils and utils.CreateFrameGlow and utils.CreateFrameGlow(frame.bar, config)

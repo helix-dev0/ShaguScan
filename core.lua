@@ -1,13 +1,13 @@
 if ShaguScan.disabled then return end
 
 local core = CreateFrame("Frame", nil, WorldFrame)
+ShaguScan.core = core
 
 core.guids = {}
 
 core.add = function(unit)
-  local _, guid = UnitExists(unit)
-
-  if guid then
+  local exists, guid = UnitExists(unit)
+  if exists and guid then
     core.guids[guid] = GetTime()
   end
 end
