@@ -314,6 +314,15 @@ utils.MergeConfigDefaults = function(config)
   -- Ensure all new display options have defaults for backward compatibility
   local pfui_colors = utils.GetPfUIColors()
   local defaults = {
+    anchor = "CENTER",
+    x = 0,
+    y = 0,
+    width = 150,
+    height = 15,
+    scale = 1,
+    maxrow = 20,
+    spacing = 2,
+    filter = "player",
     bar_texture = utils.GetDefaultStatusbarTexture(),
     bar_color_mode = "reaction",
     bar_color_custom = {r=1, g=0.8, b=0.2, a=1},

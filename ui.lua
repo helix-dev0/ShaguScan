@@ -105,9 +105,10 @@ ui.BarLeave = function()
   GameTooltip:Hide()
 end
 
-ui.BarUpdate = function()
+ui.BarUpdate = function(elapsed)
+  if not elapsed then return end
   -- animate combat text
-  CombatFeedback_OnUpdate(arg1)
+  CombatFeedback_OnUpdate(elapsed)
 
   -- update statusbar values
   this.bar:SetMinMaxValues(0, UnitHealthMax(this.guid))
@@ -334,10 +335,10 @@ ui.CreateBar = function(parent, guid, config)
 end
 
 ui:SetAllPoints()
-ui:SetScript("OnUpdate", function(elapsed)
-  this.elapsed = (this.elapsed or 0) + elapsed
-  if this.elapsed < 0.5 then return end
-  this.elapsed = 0
+ui:Show()
+
+ui:SetScript("OnUpdate", function()
+  if (this.tick or 1) > GetTime() then return else this.tick = GetTime() + .5 end
 
   -- remove old leftover frames
   for caption, root in pairs(ui.frames) do
@@ -357,7 +358,7 @@ ui:SetScript("OnUpdate", function(elapsed)
     local root = ui.frames[caption]
 
     -- skip if locked (due to moving)
-    if root.lock then return end
+    if not root.lock then
 
     -- update position based on config
     local posKey = config.anchor .. "_" .. config.x .. "_" .. config.y .. "_" .. config.scale
@@ -473,6 +474,8 @@ ui:SetScript("OnUpdate", function(elapsed)
     -- update window size
     root:SetWidth(width)
     root:SetHeight(height)
+    
+    end -- end of else block (not locked)
   end
 end)
 
