@@ -118,6 +118,11 @@ utils.rgbhex = function(r, g, b, a)
 end
 
 utils.GetReactionColor = function(unitstr)
+  -- Handle test units
+  if unitstr == "test_unit_preview" then
+    return utils.rgbhex(0.2, 1, 0.2), 0.2, 1, 0.2  -- Green (friendly) for test
+  end
+  
   local reaction = UnitReaction(unitstr, "player")
   local r, g, b = 1, 0.2, 0.2 -- Default to red (hostile)
   
@@ -131,6 +136,11 @@ end
 
 utils.GetUnitColor = function(unitstr)
   local r, g, b = .8, .8, .8
+  
+  -- Handle test units
+  if unitstr == "test_unit_preview" then
+    return utils.rgbhex(0.67, 0.83, 0.45), 0.67, 0.83, 0.45  -- Hunter green for test
+  end
 
   if UnitIsPlayer(unitstr) then
     local _, class = UnitClass(unitstr)
@@ -156,6 +166,11 @@ utils.GetUnitColor = function(unitstr)
 end
 
 utils.GetLevelColor = function(unitstr)
+  -- Handle test units
+  if unitstr == "test_unit_preview" then
+    return utils.rgbhex(1, 1, 0), 1, 1, 0  -- Yellow for level 60
+  end
+  
   local color = GetDifficultyColor(UnitLevel(unitstr))
   local r, g, b = .8, .8, .8
 
@@ -167,6 +182,11 @@ utils.GetLevelColor = function(unitstr)
 end
 
 utils.GetLevelString = function(unitstr)
+  -- Handle test units
+  if unitstr == "test_unit_preview" then
+    return "60"
+  end
+  
   local level = UnitLevel(unitstr)
   if not level or level == -1 then 
     level = "??" 
@@ -174,15 +194,18 @@ utils.GetLevelString = function(unitstr)
     level = tostring(level)
   end
 
-  local elite = UnitClassification(unitstr)
-  if elite == "worldboss" then
-    level = level .. "B"
-  elseif elite == "rareelite" then
-    level = level .. "R+"
-  elseif elite == "elite" then
-    level = level .. "+"
-  elseif elite == "rare" then
-    level = level .. "R"
+  -- Don't check classification for test units
+  if unitstr ~= "test_unit_preview" then
+    local elite = UnitClassification(unitstr)
+    if elite == "worldboss" then
+      level = level .. "B"
+    elseif elite == "rareelite" then
+      level = level .. "R+"
+    elseif elite == "elite" then
+      level = level .. "+"
+    elseif elite == "rare" then
+      level = level .. "R"
+    end
   end
 
   return level
@@ -226,8 +249,14 @@ utils.GetBorderBackdrop = function(config)
 end
 
 utils.FormatHealthText = function(unitstr, format)
-  local current = UnitHealth(unitstr)
-  local max = UnitHealthMax(unitstr)
+  -- Handle test units
+  local current, max
+  if unitstr == "test_unit_preview" then
+    current, max = 75, 100
+  else
+    current = UnitHealth(unitstr)
+    max = UnitHealthMax(unitstr)
+  end
   
   if format == "percent" then
     local percent = max > 0 and floor(current / max * 100) or 0
@@ -247,7 +276,14 @@ end
 utils.FormatMainText = function(unitstr, format, config)
   local level = utils.GetLevelString(unitstr)
   local level_color = utils.GetLevelColor(unitstr)
-  local name = UnitName(unitstr)
+  local name
+  
+  -- Handle test units
+  if unitstr == "test_unit_preview" then
+    name = "Test Unit Preview"
+  else
+    name = UnitName(unitstr)
+  end
   
   -- Simple fallback for empty names
   if not name or name == "" then

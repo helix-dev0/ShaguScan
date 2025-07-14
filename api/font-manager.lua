@@ -231,8 +231,14 @@ function ShaguScan.fonts.CreateFontDropdown(parent, selectedFont, onChange)
   local availableFonts = ShaguScan.fonts.GetAvailableFonts()
   local selectedFontName = ShaguScan.fonts.GetFontName(selectedFont)
   
+  -- Convert font objects to simple string array for dropdown
+  local fontNames = {}
+  for _, fontEntry in ipairs(availableFonts) do
+    table.insert(fontNames, fontEntry.name)
+  end
+  
   -- Use existing widget factory for dropdown creation
-  local dropdown = widgets.CreateDropdown(parent, availableFonts, selectedFontName)
+  local dropdown = ShaguScan.widgets.CreateDropdown(parent, fontNames, selectedFontName)
   
   -- Enhanced methods for font-specific functionality
   dropdown.GetFontPath = function()

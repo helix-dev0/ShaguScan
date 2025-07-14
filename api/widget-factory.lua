@@ -108,9 +108,17 @@ end
 function ShaguScan.factory.CreateConfigFontString(parent, config, layer, template)
   local text = parent:CreateFontString(nil, layer or "OVERLAY", template or "GameFontWhite")
   
-  -- Apply font configuration using centralized font manager
-  if config then
+  -- Apply font configuration using centralized font manager (with fallback)
+  if config and ShaguScan.fonts and ShaguScan.fonts.ApplyFont then
     ShaguScan.fonts.ApplyFont(text, config)
+  elseif config then
+    -- Fallback font application when font manager isn't available
+    local fontSize = config.text_size or 12
+    local fontOutline = config.text_outline or "OUTLINE"
+    text:SetFont(STANDARD_TEXT_FONT, fontSize, fontOutline)
+    if config.text_color then
+      text:SetTextColor(config.text_color.r or 1, config.text_color.g or 1, config.text_color.b or 1, config.text_color.a or 1)
+    end
   end
   
   return text
@@ -261,6 +269,7 @@ function ShaguScan.factory.CreateDialog(title, width, height, closable, frameNam
   if closable then
     local closeButton = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")
     closeButton:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -5, -5)
+    closeButton:SetFrameLevel(dialog:GetFrameLevel() + 10) -- Ensure it's above other content
     dialog.closeButton = closeButton
   end
   

@@ -112,7 +112,8 @@ end
 function ShaguScan.updater.UpdateBorderSettings(frame, config)
   if not frame.border then return end
   
-  -- Get backdrop configuration
+  -- Get backdrop configuration (with safety check for utils)
+  if not utils or not utils.GetBorderBackdrop then return end
   local backdrop = utils.GetBorderBackdrop(config)
   if backdrop then
     -- Update backdrop (like pfUI's backdrop updates)

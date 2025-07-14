@@ -1,0 +1,45 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE/Editor files
+.vscode/settings.json.user
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# WoW addon specific
+SavedVariables/
+WTF/
+
+# Backup files
+*.bak
+*.backup
+
+# Local development files
+local_*
+test_*
+
+# Reference repositories (for development study only)
+pfui-reference/
+
+node_modules/
+.editorconfig
+mcp.json
+
+*.md
+!README.md
+
+.luacheckrc
+*.json

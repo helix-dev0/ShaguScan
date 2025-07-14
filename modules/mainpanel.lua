@@ -58,17 +58,8 @@ mainpanel.OpenMainWindow = function()
 
   -- Main Dialog
   -- Create main control panel dialog using widget factory (consolidates backdrop creation)
-  local dialog = ShaguScan.factory.CreateDialog("ShaguScan - Main Control Panel", 500, 650, true, "ShaguScanMainWindow")
+  local dialog = ShaguScan.factory.CreateDialog("ShaguScan - Main Control Panel", 500, 400, true, "ShaguScanMainWindow")
   table.insert(UISpecialFrames, "ShaguScanMainWindow")
-
-  -- Close button
-  dialog.close = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")
-  dialog.close:SetWidth(20)
-  dialog.close:SetHeight(20)
-  dialog.close:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", 0, 0)
-  dialog.close:SetScript("OnClick", function()
-    this:GetParent():Hide()
-  end)
 
   -- Tab system
   dialog.tab1 = CreateFrame("Button", nil, dialog, "GameMenuButtonTemplate")
@@ -171,9 +162,9 @@ mainpanel.CreateScanWindowPanel = function(parent)
   panel.scrollFrame:SetScrollChild(panel.scrollChild)
 
   -- Scroll bar
-  panel.scrollBar = CreateFrame("Slider", nil, panel.scrollFrame)
-  panel.scrollBar:SetPoint("TOPLEFT", panel.scrollFrame, "TOPRIGHT", 5, 0)
-  panel.scrollBar:SetPoint("BOTTOMLEFT", panel.scrollFrame, "BOTTOMRIGHT", 5, 0)
+  panel.scrollBar = CreateFrame("Slider", nil, panel)
+  panel.scrollBar:SetPoint("TOPLEFT", panel.scrollFrame, "TOPRIGHT", 5, -16)
+  panel.scrollBar:SetPoint("BOTTOMLEFT", panel.scrollFrame, "BOTTOMRIGHT", 5, 16)
   panel.scrollBar:SetWidth(15)
   panel.scrollBar:SetBackdrop({
     bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
@@ -183,6 +174,35 @@ mainpanel.CreateScanWindowPanel = function(parent)
   })
   panel.scrollBar:SetBackdropColor(0, 0, 0, 0.5)
   panel.scrollBar:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+  
+  -- Configure scroll bar
+  panel.scrollBar:SetMinMaxValues(0, 0)
+  panel.scrollBar:SetValue(0)
+  panel.scrollBar:SetValueStep(30)
+  
+  -- Create scroll bar thumb
+  panel.scrollBar:SetThumbTexture("Interface\\Buttons\\UI-ScrollBar-Knob")
+  local thumb = panel.scrollBar:GetThumbTexture()
+  thumb:SetHeight(50)
+  thumb:SetWidth(15)
+  
+  -- Handle scrolling
+  panel.scrollBar:SetScript("OnValueChanged", function()
+    panel.scrollFrame:SetVerticalScroll(this:GetValue())
+  end)
+  
+  panel.scrollFrame:EnableMouseWheel(true)
+  panel.scrollFrame:SetScript("OnMouseWheel", function()
+    local current = panel.scrollBar:GetValue()
+    local min, max = panel.scrollBar:GetMinMaxValues()
+    local step = panel.scrollBar:GetValueStep()
+    
+    if arg1 > 0 then
+      panel.scrollBar:SetValue(math.max(min, current - step))
+    else
+      panel.scrollBar:SetValue(math.min(max, current + step))
+    end
+  end)
 
   -- Populate window list
   mainpanel.RefreshWindowList(panel)
@@ -252,7 +272,20 @@ mainpanel.RefreshWindowList = function(panel)
   end
 
   -- Update scroll child height
-  panel.scrollChild:SetHeight(math.max(1, math.abs(yOffset)))
+  local totalHeight = math.max(1, math.abs(yOffset))
+  panel.scrollChild:SetHeight(totalHeight)
+  
+  -- Update scroll bar range
+  local scrollFrameHeight = panel.scrollFrame:GetHeight()
+  local maxScroll = math.max(0, totalHeight - scrollFrameHeight)
+  panel.scrollBar:SetMinMaxValues(0, maxScroll)
+  
+  -- Show/hide scroll bar based on content
+  if maxScroll > 0 then
+    panel.scrollBar:Show()
+  else
+    panel.scrollBar:Hide()
+  end
 end
 
 mainpanel.CreateNewScanWindow = function()
@@ -379,7 +412,7 @@ mainpanel.CreateGlobalSettingsPanel = function(parent)
   -- This is the existing OpenMainConfig content, but as a panel
   local panel = CreateFrame("Frame", nil, parent)
   panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, -70)
-  panel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -10, 50)
+  panel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -10, 10)
 
   panel:SetBackdrop(widgets.backdrop)
   panel:SetBackdropColor(.2, .2, .2, 1)

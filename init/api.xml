@@ -1,0 +1,7 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+  <Include file="..\api\utils.lua"/>
+  <Include file="..\api\font-manager.lua"/>
+  <Include file="..\api\settings-updater.lua"/>
+  <Include file="..\api\widget-factory.lua"/>
+  <Include file="..\api\widgets.lua"/>
+</Ui>

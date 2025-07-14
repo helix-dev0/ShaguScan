@@ -105,9 +105,9 @@ dialogs.OpenConfig = function(caption)
     local scrollFrameWidth = scrollFrame:GetWidth()
     if scrollFrameWidth and scrollFrameWidth > 0 then
       scrollChild:SetWidth(scrollFrameWidth)
-      -- Also update backdrop width to match (defined later)
-      if backdrop then
-        backdrop:SetWidth(scrollFrameWidth)
+      -- Also update backdrop width to match (if it exists)
+      if dialog.backdrop then
+        dialog.backdrop:SetWidth(scrollFrameWidth)
       end
     end
   end
@@ -187,25 +187,25 @@ dialogs.OpenConfig = function(caption)
       return
     end
 
-    local filter = dialog.filter:GetText()
-    local width = dialog.width:GetText()
-    local height = dialog.height:GetText()
-    local spacing = dialog.spacing:GetText()
-    local maxrow = dialog.maxrow:GetText()
-    local anchor = dialog.anchor:GetText()
-    local scale = dialog.scale:GetText()
-    local x = dialog.x:GetText()
-    local y = dialog.y:GetText()
+    local filter = (dialog.filter and dialog.filter.GetText) and dialog.filter:GetText() or ""
+    local width = (dialog.width and dialog.width.GetText) and dialog.width:GetText() or "100"
+    local height = (dialog.height and dialog.height.GetText) and dialog.height:GetText() or "20"
+    local spacing = (dialog.spacing and dialog.spacing.GetText) and dialog.spacing:GetText() or "2"
+    local maxrow = (dialog.maxrow and dialog.maxrow.GetText) and dialog.maxrow:GetText() or "5"
+    local anchor = (dialog.anchor and dialog.anchor.GetText) and dialog.anchor:GetText() or "CENTER"
+    local scale = (dialog.scale and dialog.scale.GetText) and dialog.scale:GetText() or "1"
+    local x = (dialog.x and dialog.x.GetText) and dialog.x:GetText() or "0"
+    local y = (dialog.y and dialog.y.GetText) and dialog.y:GetText() or "0"
 
     -- New display options (with safe fallbacks)
     local bar_color_mode = (dialog.bar_color_mode and dialog.bar_color_mode.GetValue) and dialog.bar_color_mode.GetValue() or "reaction"
     local bar_texture = (dialog.bar_texture and dialog.bar_texture.GetTexturePath) and dialog.bar_texture.GetTexturePath() or "Interface\\TargetingFrame\\UI-StatusBar"
-    local bar_alpha = dialog.bar_alpha:GetText()
+    local bar_alpha = (dialog.bar_alpha and dialog.bar_alpha.GetText) and dialog.bar_alpha:GetText() or "1"
     local background_texture = (dialog.background_texture and dialog.background_texture.GetValue) and dialog.background_texture.GetValue() or "default"
     local border_style = (dialog.border_style and dialog.border_style.GetValue) and dialog.border_style.GetValue() or "default"
     local text_position = (dialog.text_position and dialog.text_position.GetValue) and dialog.text_position.GetValue() or "left"
     local text_format = (dialog.text_format and dialog.text_format.GetValue) and dialog.text_format.GetValue() or "level_name"
-    local text_size = dialog.text_size:GetText()
+    local text_size = (dialog.text_size and dialog.text_size.GetText) and dialog.text_size:GetText() or "9"
     local text_font = (dialog.text_font and dialog.text_font.GetFontPath) and dialog.text_font.GetFontPath() or utils.GetDefaultPfUIFont()
     local text_outline = (dialog.text_outline and dialog.text_outline.GetValue) and dialog.text_outline.GetValue() or "THINOUTLINE"
     local health_text_enabled = (dialog.health_text_enabled and dialog.health_text_enabled.GetValue) and dialog.health_text_enabled.GetValue() or "false"
@@ -365,31 +365,14 @@ dialogs.OpenConfig = function(caption)
     end
   end)
 
-  dialog.close = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")
-  dialog.close:SetWidth(20)
-  dialog.close:SetHeight(20)
-  dialog.close:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", 0, 0)
-  dialog.close:SetScript("OnClick", function()
-    this:GetParent():Hide()
-  end)
-
-  -- Caption (Title)
-  dialog.caption = dialog:CreateTextBox(caption)
-  dialog.caption:SetPoint("TOPLEFT", dialog, "TOPLEFT", 8, -18)
-  dialog.caption:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -8, -18)
-  dialog.caption:SetFont(STANDARD_TEXT_FONT, 10)
-  dialog.caption:SetJustifyH("CENTER")
-  dialog.caption:SetHeight(20)
-
-  -- Backdrop (now inside scroll frame)
-  local backdrop = CreateFrame("Frame", nil, scrollChild)
+  -- Backdrop (content container - no scroll needed)
+  local backdrop = CreateFrame("Frame", nil, dialog)
   backdrop:SetBackdrop(widgets.backdrop)
   backdrop:SetBackdropBorderColor(.2,.2,.2,1)
   backdrop:SetBackdropColor(.2,.2,.2,1)
 
-  backdrop:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, 0)
-  backdrop:SetWidth(1) -- Will be set dynamically
-  backdrop:SetHeight(800) -- Initial height - will be adjusted dynamically
+  backdrop:SetPoint("TOPLEFT", dialog, "TOPLEFT", 10, -40)
+  backdrop:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -10, 40)
 
   backdrop.CreateTextBox = widgets.CreateTextBox
   backdrop.CreateLabel = widgets.CreateLabel
@@ -409,6 +392,24 @@ dialogs.OpenConfig = function(caption)
   local header1 = backdrop:CreateSectionHeader("Basic Settings")
   header1:SetPoint("TOPLEFT", backdrop, LABEL_COL, -backdrop.pos)
   backdrop.pos = backdrop.pos + 22
+
+  -- Window Name
+  local label = backdrop:CreateLabel("Window Name:")
+  label:SetPoint("TOPLEFT", backdrop, LABEL_COL, -backdrop.pos)
+
+  dialog.caption = backdrop:CreateTextBox(caption)
+  dialog.caption:SetPoint("TOPLEFT", backdrop, "TOPLEFT", INPUT_COL, -backdrop.pos)
+  dialog.caption:SetWidth(250)
+  dialog.caption:SetScript("OnEnter", function()
+    dialog.caption:ShowTooltip({
+      "Scan Window Name",
+      "|cffaaaaaaUnique name for this scan window."
+    })
+  end)
+  dialog.caption:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+  end)
+  backdrop.pos = backdrop.pos + 25
 
   -- Filter
   local label = backdrop:CreateLabel("Filter:")
@@ -617,6 +618,9 @@ dialogs.OpenConfig = function(caption)
   end)
   backdrop.pos = backdrop.pos + SPACING
 
+  -- Add extra spacing before test bar button
+  backdrop.pos = backdrop.pos + 10
+  
   -- Test Bar Button (moved up from bottom)
   dialog.test_bar = CreateFrame("Button", nil, backdrop, "GameMenuButtonTemplate")
   dialog.test_bar:SetWidth(200)
@@ -971,7 +975,7 @@ dialogs.OpenConfig = function(caption)
   local label = backdrop:CreateLabel("Text Outline:")
   label:SetPoint("TOPLEFT", backdrop, LABEL_COL, -backdrop.pos)
 
-  dialog.text_outline = backdrop:CreateDropdown({"", "THINOUTLINE", "OUTLINE", "THICKOUTLINE"}, config.text_outline or "THINOUTLINE")
+  dialog.text_outline = backdrop:CreateDropdown({"", "THIN", "OUTLINE", "THICKOUTLINE"}, config.text_outline or "THIN")
   dialog.text_outline:SetPoint("TOPLEFT", backdrop, "TOPLEFT", INPUT_COL, -backdrop.pos)
   dialog.text_outline:SetWidth(140)
   dialog.text_outline:SetScript("OnEnter", function()
@@ -980,7 +984,7 @@ dialogs.OpenConfig = function(caption)
       "|cffaaaaaaOutline style for text readability:",
       " ",
       { "|cffffffff\"\"", "No Outline" },
-      { "|cffffffffTHINOUTLINE", "Thin Outline (Default)" },
+      { "|cffffffffTHIN", "Thin Outline (Default)" },
       { "|cffffffffOUTLINE", "Standard Outline" },
       { "|cffffffffTHICKOUTLINE", "Thick Outline" }
     })
