@@ -68,10 +68,6 @@ dialogs.OpenConfig = function(caption)
     }
   end
 
-  -- Main Dialog
-  local dialog = CreateFrame("Frame", "ShaguScanConfigDialog"..caption, UIParent)
-  table.insert(UISpecialFrames, "ShaguScanConfigDialog"..caption)
-
   -- Ensure config exists
   if not ShaguScan_db.config[caption] then
     DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Shagu|cffffffffScan:|cffffaaaa Error: Config not found for window '" .. caption .. "'")
@@ -85,21 +81,12 @@ dialogs.OpenConfig = function(caption)
     ShaguScan_db.config[caption] = config  -- Update the stored config with defaults
   end
 
+  -- Create dialog using widget factory (consolidates backdrop creation)
+  local dialog = ShaguScan.factory.CreateDialog("ShaguScan Configuration: " .. caption, 420, 620, true, "ShaguScanConfigDialog"..caption)
+  table.insert(UISpecialFrames, "ShaguScanConfigDialog"..caption)
+  
   dialog:SetFrameStrata("FULLSCREEN_DIALOG")
   dialog:SetFrameLevel(100)
-  dialog:SetPoint("CENTER", 0, 0)
-  dialog:SetWidth(420) -- Increased width to accommodate scroll bar
-  dialog:SetHeight(620) -- Fixed height for scrolling
-
-  dialog:EnableMouse(true)
-  dialog:RegisterForDrag("LeftButton")
-  dialog:SetMovable(true)
-  dialog:SetScript("OnDragStart", function() this:StartMoving() end)
-  dialog:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
-
-  dialog:SetBackdrop(widgets.backdrop)
-  dialog:SetBackdropColor(.2, .2, .2, 1)
-  dialog:SetBackdropBorderColor(.2, .2, .2, 1)
 
   -- Create scroll frame for content
   local scrollFrame = CreateFrame("ScrollFrame", nil, dialog)
@@ -118,9 +105,9 @@ dialogs.OpenConfig = function(caption)
     local scrollFrameWidth = scrollFrame:GetWidth()
     if scrollFrameWidth and scrollFrameWidth > 0 then
       scrollChild:SetWidth(scrollFrameWidth)
-      -- Also update backdrop width to match (defined later)
-      if backdrop then
-        backdrop:SetWidth(scrollFrameWidth)
+      -- Also update backdrop width to match (if it exists)
+      if dialog.backdrop then
+        dialog.backdrop:SetWidth(scrollFrameWidth)
       end
     end
   end
@@ -200,25 +187,25 @@ dialogs.OpenConfig = function(caption)
       return
     end
 
-    local filter = dialog.filter:GetText()
-    local width = dialog.width:GetText()
-    local height = dialog.height:GetText()
-    local spacing = dialog.spacing:GetText()
-    local maxrow = dialog.maxrow:GetText()
-    local anchor = dialog.anchor:GetText()
-    local scale = dialog.scale:GetText()
-    local x = dialog.x:GetText()
-    local y = dialog.y:GetText()
+    local filter = (dialog.filter and dialog.filter.GetText) and dialog.filter:GetText() or ""
+    local width = (dialog.width and dialog.width.GetText) and dialog.width:GetText() or "100"
+    local height = (dialog.height and dialog.height.GetText) and dialog.height:GetText() or "20"
+    local spacing = (dialog.spacing and dialog.spacing.GetText) and dialog.spacing:GetText() or "2"
+    local maxrow = (dialog.maxrow and dialog.maxrow.GetText) and dialog.maxrow:GetText() or "5"
+    local anchor = (dialog.anchor and dialog.anchor.GetText) and dialog.anchor:GetText() or "CENTER"
+    local scale = (dialog.scale and dialog.scale.GetText) and dialog.scale:GetText() or "1"
+    local x = (dialog.x and dialog.x.GetText) and dialog.x:GetText() or "0"
+    local y = (dialog.y and dialog.y.GetText) and dialog.y:GetText() or "0"
 
     -- New display options (with safe fallbacks)
     local bar_color_mode = (dialog.bar_color_mode and dialog.bar_color_mode.GetValue) and dialog.bar_color_mode.GetValue() or "reaction"
     local bar_texture = (dialog.bar_texture and dialog.bar_texture.GetTexturePath) and dialog.bar_texture.GetTexturePath() or "Interface\\TargetingFrame\\UI-StatusBar"
-    local bar_alpha = dialog.bar_alpha:GetText()
+    local bar_alpha = (dialog.bar_alpha and dialog.bar_alpha.GetText) and dialog.bar_alpha:GetText() or "1"
     local background_texture = (dialog.background_texture and dialog.background_texture.GetValue) and dialog.background_texture.GetValue() or "default"
     local border_style = (dialog.border_style and dialog.border_style.GetValue) and dialog.border_style.GetValue() or "default"
     local text_position = (dialog.text_position and dialog.text_position.GetValue) and dialog.text_position.GetValue() or "left"
     local text_format = (dialog.text_format and dialog.text_format.GetValue) and dialog.text_format.GetValue() or "level_name"
-    local text_size = dialog.text_size:GetText()
+    local text_size = (dialog.text_size and dialog.text_size.GetText) and dialog.text_size:GetText() or "9"
     local text_font = (dialog.text_font and dialog.text_font.GetFontPath) and dialog.text_font.GetFontPath() or utils.GetDefaultPfUIFont()
     local text_outline = (dialog.text_outline and dialog.text_outline.GetValue) and dialog.text_outline.GetValue() or "THINOUTLINE"
     local health_text_enabled = (dialog.health_text_enabled and dialog.health_text_enabled.GetValue) and dialog.health_text_enabled.GetValue() or "false"
@@ -287,114 +274,16 @@ dialogs.OpenConfig = function(caption)
           frame.config = new_config
           
           -- Force texture update
-          if new_config.bar_texture then
-            frame.bar:SetStatusBarTexture(new_config.bar_texture)
-          end
-          
-          -- Force background updates (keep red for missing health)
-          if frame.bar.bg then
-            -- Keep red color for missing health indication, only update alpha
-            frame.bar.bg:SetVertexColor(0.8, 0.1, 0.1, new_config.background_alpha or 0.8)
-          end
-          
-          -- Force border updates
-          if frame.border then
-            -- Update border backdrop
-            local backdrop = utils.GetBorderBackdrop(new_config)
-            if backdrop then
-              frame:SetBackdrop(backdrop)
-              frame:SetBackdropBorderColor(new_config.border_color.r, new_config.border_color.g, new_config.border_color.b, new_config.border_color.a)
-            else
-              frame:SetBackdrop(nil) -- Remove border if style is "none"
+          -- Apply all configuration changes using unified settings updater
+          -- This replaces 110+ lines of repeated update code with pfUI-style modular updates
+          if ShaguScan and ShaguScan.updater and ShaguScan.updater.ApplyConfigToFrame then
+            ShaguScan.updater.ApplyConfigToFrame(frame, new_config)
+          else
+            -- Fallback to basic frame update if updater not available
+            frame.config = new_config
+            if frame.OnUpdate then
+              frame.OnUpdate()
             end
-          end
-          
-          -- Force color update using existing bar update logic
-          if frame.OnUpdate then
-            frame.OnUpdate()
-          end
-          
-          -- Force font update for main text
-          if frame.text then
-            if new_config.text_font and new_config.text_font ~= "" then
-              frame.text:SetFont(new_config.text_font, new_config.text_size or 9, new_config.text_outline or "THINOUTLINE")
-            else
-              frame.text:SetFont(STANDARD_TEXT_FONT, new_config.text_size or 9, new_config.text_outline or "THINOUTLINE")
-            end
-            frame.text:SetTextColor(new_config.text_color.r, new_config.text_color.g, new_config.text_color.b, new_config.text_color.a)
-            
-            -- Update text positioning
-            frame.text:ClearAllPoints()
-            if new_config.text_position == "center" then
-              frame.text:SetPoint("CENTER", frame.bar, "CENTER", 0, 0)
-              frame.text:SetJustifyH("CENTER")
-            elseif new_config.text_position == "right" then
-              frame.text:SetPoint("RIGHT", frame.bar, "RIGHT", -2, 0)
-              frame.text:SetJustifyH("RIGHT")
-            else -- left (default)
-              frame.text:SetPoint("LEFT", frame.bar, "LEFT", 2, 0)
-              frame.text:SetJustifyH("LEFT")
-            end
-          end
-          
-          -- Force font update for health text
-          if frame.health_text then
-            if new_config.text_font and new_config.text_font ~= "" then
-              frame.health_text:SetFont(new_config.text_font, new_config.text_size or 9, new_config.text_outline or "THINOUTLINE")
-            else
-              frame.health_text:SetFont(STANDARD_TEXT_FONT, new_config.text_size or 9, new_config.text_outline or "THINOUTLINE")
-            end
-            
-            -- Update health text positioning
-            frame.health_text:ClearAllPoints()
-            if new_config.health_text_position == "center" then
-              frame.health_text:SetPoint("CENTER", frame.bar, "CENTER", 0, 0)
-              frame.health_text:SetJustifyH("CENTER")
-            elseif new_config.health_text_position == "left" then
-              frame.health_text:SetPoint("LEFT", frame.bar, "LEFT", 2, 0)
-              frame.health_text:SetJustifyH("LEFT")
-            else -- right (default)
-              frame.health_text:SetPoint("RIGHT", frame.bar, "RIGHT", -2, 0)
-              frame.health_text:SetJustifyH("RIGHT")
-            end
-          end
-          
-          -- Handle health text enabled/disabled changes
-          if new_config.health_text_enabled and not frame.health_text then
-            -- Create health text if it was just enabled
-            local health_text = frame.bar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-            local fontPath = utils.GetFontPathFromName(new_config.text_font)
-            health_text:SetFont(fontPath, new_config.text_size, new_config.text_outline)
-            health_text:SetTextColor(new_config.text_color.r, new_config.text_color.g, new_config.text_color.b, new_config.text_color.a)
-            
-            -- Position health text
-            if new_config.health_text_position == "center" then
-              health_text:SetPoint("CENTER", frame.bar, "CENTER", 0, 0)
-              health_text:SetJustifyH("CENTER")
-            elseif new_config.health_text_position == "left" then
-              health_text:SetPoint("LEFT", frame.bar, "LEFT", 2, 0)
-              health_text:SetJustifyH("LEFT")
-            else -- right (default)
-              health_text:SetPoint("RIGHT", frame.bar, "RIGHT", -2, 0)
-              health_text:SetJustifyH("RIGHT")
-            end
-            frame.health_text = health_text
-          elseif not new_config.health_text_enabled and frame.health_text then
-            -- Remove health text if it was just disabled
-            frame.health_text:Hide()
-            frame.health_text = nil
-          end
-          
-          -- Handle frame glow changes
-          if new_config.frame_glow and not frame.glow then
-            -- Create glow if it was just enabled
-            frame.glow = utils and utils.CreateFrameGlow and utils.CreateFrameGlow(frame.bar, new_config)
-          elseif not new_config.frame_glow and frame.glow then
-            -- Remove glow if it was just disabled
-            if frame.glow and frame.glow.Hide then
-              frame.glow:Hide()
-            end
-            frame.glow = nil
           end
         end
       end
@@ -476,31 +365,14 @@ dialogs.OpenConfig = function(caption)
     end
   end)
 
-  dialog.close = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")
-  dialog.close:SetWidth(20)
-  dialog.close:SetHeight(20)
-  dialog.close:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", 0, 0)
-  dialog.close:SetScript("OnClick", function()
-    this:GetParent():Hide()
-  end)
-
-  -- Caption (Title)
-  dialog.caption = dialog:CreateTextBox(caption)
-  dialog.caption:SetPoint("TOPLEFT", dialog, "TOPLEFT", 8, -18)
-  dialog.caption:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -8, -18)
-  dialog.caption:SetFont(STANDARD_TEXT_FONT, 10)
-  dialog.caption:SetJustifyH("CENTER")
-  dialog.caption:SetHeight(20)
-
-  -- Backdrop (now inside scroll frame)
-  local backdrop = CreateFrame("Frame", nil, scrollChild)
+  -- Backdrop (content container - no scroll needed)
+  local backdrop = CreateFrame("Frame", nil, dialog)
   backdrop:SetBackdrop(widgets.backdrop)
   backdrop:SetBackdropBorderColor(.2,.2,.2,1)
   backdrop:SetBackdropColor(.2,.2,.2,1)
 
-  backdrop:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, 0)
-  backdrop:SetWidth(1) -- Will be set dynamically
-  backdrop:SetHeight(800) -- Initial height - will be adjusted dynamically
+  backdrop:SetPoint("TOPLEFT", dialog, "TOPLEFT", 10, -40)
+  backdrop:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -10, 40)
 
   backdrop.CreateTextBox = widgets.CreateTextBox
   backdrop.CreateLabel = widgets.CreateLabel
@@ -520,6 +392,24 @@ dialogs.OpenConfig = function(caption)
   local header1 = backdrop:CreateSectionHeader("Basic Settings")
   header1:SetPoint("TOPLEFT", backdrop, LABEL_COL, -backdrop.pos)
   backdrop.pos = backdrop.pos + 22
+
+  -- Window Name
+  local label = backdrop:CreateLabel("Window Name:")
+  label:SetPoint("TOPLEFT", backdrop, LABEL_COL, -backdrop.pos)
+
+  dialog.caption = backdrop:CreateTextBox(caption)
+  dialog.caption:SetPoint("TOPLEFT", backdrop, "TOPLEFT", INPUT_COL, -backdrop.pos)
+  dialog.caption:SetWidth(250)
+  dialog.caption:SetScript("OnEnter", function()
+    dialog.caption:ShowTooltip({
+      "Scan Window Name",
+      "|cffaaaaaaUnique name for this scan window."
+    })
+  end)
+  dialog.caption:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+  end)
+  backdrop.pos = backdrop.pos + 25
 
   -- Filter
   local label = backdrop:CreateLabel("Filter:")
@@ -728,6 +618,9 @@ dialogs.OpenConfig = function(caption)
   end)
   backdrop.pos = backdrop.pos + SPACING
 
+  -- Add extra spacing before test bar button
+  backdrop.pos = backdrop.pos + 10
+  
   -- Test Bar Button (moved up from bottom)
   dialog.test_bar = CreateFrame("Button", nil, backdrop, "GameMenuButtonTemplate")
   dialog.test_bar:SetWidth(200)
@@ -1019,7 +912,7 @@ dialogs.OpenConfig = function(caption)
     end
   end
 
-  dialog.text_font = widgets.CreateFontDropdown(backdrop, currentFontName)
+  dialog.text_font = ShaguScan.fonts.CreateFontDropdown(backdrop, currentFontName)
   dialog.text_font:SetPoint("TOPLEFT", backdrop, "TOPLEFT", INPUT_COL, -backdrop.pos)
   dialog.text_font:SetWidth(150)
   dialog.text_font:SetScript("OnEnter", function()
@@ -1082,7 +975,7 @@ dialogs.OpenConfig = function(caption)
   local label = backdrop:CreateLabel("Text Outline:")
   label:SetPoint("TOPLEFT", backdrop, LABEL_COL, -backdrop.pos)
 
-  dialog.text_outline = backdrop:CreateDropdown({"", "THINOUTLINE", "OUTLINE", "THICKOUTLINE"}, config.text_outline or "THINOUTLINE")
+  dialog.text_outline = backdrop:CreateDropdown({"", "THIN", "OUTLINE", "THICKOUTLINE"}, config.text_outline or "THIN")
   dialog.text_outline:SetPoint("TOPLEFT", backdrop, "TOPLEFT", INPUT_COL, -backdrop.pos)
   dialog.text_outline:SetWidth(140)
   dialog.text_outline:SetScript("OnEnter", function()
@@ -1091,7 +984,7 @@ dialogs.OpenConfig = function(caption)
       "|cffaaaaaaOutline style for text readability:",
       " ",
       { "|cffffffff\"\"", "No Outline" },
-      { "|cffffffffTHINOUTLINE", "Thin Outline (Default)" },
+      { "|cffffffffTHIN", "Thin Outline (Default)" },
       { "|cffffffffOUTLINE", "Standard Outline" },
       { "|cffffffffTHICKOUTLINE", "Thick Outline" }
     })

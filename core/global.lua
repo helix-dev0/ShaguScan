@@ -31,7 +31,7 @@ ShaguScan_db = {
       border_color = {r=0.2, g=0.2, b=0.2, a=1},
       text_font = STANDARD_TEXT_FONT,
       text_size = 10,
-      text_outline = "THINOUTLINE",
+      text_outline = "THIN",
       text_position = "left",
       text_format = "level_name",
       text_color = {r=0.8, g=0.8, b=0.8, a=1},
@@ -64,7 +64,7 @@ ShaguScan_db = {
       border_color = {r=0.2, g=0.2, b=0.2, a=1},
       text_font = STANDARD_TEXT_FONT,
       text_size = 10,
-      text_outline = "THINOUTLINE",
+      text_outline = "THIN",
       text_position = "left", -- "left", "center", "right"
       text_format = "level_name", -- "level_name", "name_only", "level_only", "health_percent", "health_current"
       text_color = {r=0.8, g=0.8, b=0.8, a=1},
@@ -89,7 +89,7 @@ ShaguScan_db = {
       border_color = {r=0.2, g=0.2, b=0.2, a=1},
       text_font = STANDARD_TEXT_FONT,
       text_size = 10,
-      text_outline = "THINOUTLINE",
+      text_outline = "THIN",
       text_position = "left", -- "left", "center", "right"
       text_format = "level_name", -- "level_name", "name_only", "level_only", "health_percent", "health_current"
       text_color = {r=0.8, g=0.8, b=0.8, a=1},

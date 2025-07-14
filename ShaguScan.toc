@@ -5,14 +5,7 @@
 ## Version: 1.0
 ## SavedVariablesPerCharacter: ShaguScan_db
 
-global.lua
-pfui-theme.lua
-utils.lua
-widgets.lua
-dialogs.lua
-testbars.lua
-mainpanel.lua
-settings.lua
-core.lua
-filter.lua
-ui.lua
+ShaguScan.lua
+init\env.xml
+init\api.xml
+init\modules.xml

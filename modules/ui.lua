@@ -111,8 +111,14 @@ ui.BarUpdate = function(elapsed)
   CombatFeedback_OnUpdate(elapsed)
 
   -- update statusbar values
-  this.bar:SetMinMaxValues(0, UnitHealthMax(this.guid))
-  this.bar:SetValue(UnitHealth(this.guid))
+  if this.guid == "test_unit_preview" then
+    -- Keep test bar at fixed values
+    this.bar:SetMinMaxValues(0, 100)
+    this.bar:SetValue(75)
+  else
+    this.bar:SetMinMaxValues(0, UnitHealthMax(this.guid))
+    this.bar:SetValue(UnitHealth(this.guid))
+  end
 
   -- update statusbar texture based on configuration
   if this.config.bar_texture and this.config.bar_texture ~= "" then
@@ -131,18 +137,26 @@ ui.BarUpdate = function(elapsed)
   
   -- Debug color
   if ShaguScan_db.global_settings.debug_mode and not this.debug_color_logged then
-    local isPlayer = UnitIsPlayer(this.guid)
-    local _, class = UnitClass(this.guid)
-    DEFAULT_CHAT_FRAME:AddMessage("Color Debug: GUID=" .. tostring(this.guid) .. " mode=" .. tostring(this.config.bar_color_mode))
-    DEFAULT_CHAT_FRAME:AddMessage("  IsPlayer=" .. tostring(isPlayer) .. " Class=" .. tostring(class))
-    DEFAULT_CHAT_FRAME:AddMessage("  Final Color: r=" .. tostring(r) .. " g=" .. tostring(g) .. " b=" .. tostring(b))
+    if this.guid == "test_unit_preview" then
+      DEFAULT_CHAT_FRAME:AddMessage("Color Debug: TEST UNIT PREVIEW - mode=" .. tostring(this.config.bar_color_mode))
+      DEFAULT_CHAT_FRAME:AddMessage("  Final Color: r=" .. tostring(r) .. " g=" .. tostring(g) .. " b=" .. tostring(b))
+    else
+      local isPlayer = UnitIsPlayer(this.guid)
+      local _, class = UnitClass(this.guid)
+      DEFAULT_CHAT_FRAME:AddMessage("Color Debug: GUID=" .. tostring(this.guid) .. " mode=" .. tostring(this.config.bar_color_mode))
+      DEFAULT_CHAT_FRAME:AddMessage("  IsPlayer=" .. tostring(isPlayer) .. " Class=" .. tostring(class))
+      DEFAULT_CHAT_FRAME:AddMessage("  Final Color: r=" .. tostring(r) .. " g=" .. tostring(g) .. " b=" .. tostring(b))
+    end
     this.debug_color_logged = true
   end
   
 
   -- update caption text based on configuration
   local text = utils.FormatMainText(this.guid, this.config.text_format, this.config)
-  this.text:SetText(text)
+  -- Only update text if it has changed (prevents flicker and improves performance)
+  if this.text:GetText() ~= text then
+    this.text:SetText(text)
+  end
   this.text:Show()
   
   -- Update font and color (fixes font change bug)
@@ -167,15 +181,15 @@ ui.BarUpdate = function(elapsed)
     local border_color = this.config.border_color
     if this.hover then
       this.border:SetBackdropBorderColor(1, 1, 1, 1)
-    elseif UnitAffectingCombat(this.guid) then
+    elseif this.guid ~= "test_unit_preview" and UnitAffectingCombat(this.guid) then
       this.border:SetBackdropBorderColor(.8, .2, .2, 1)
     else
       this.border:SetBackdropBorderColor(border_color.r, border_color.g, border_color.b, border_color.a)
     end
   end
 
-  -- show raid icon if existing (not for players)
-  if GetRaidTargetIndex(this.guid) and not UnitIsPlayer(this.guid) then
+  -- show raid icon if existing (not for players or test units)
+  if this.guid ~= "test_unit_preview" and GetRaidTargetIndex(this.guid) and not UnitIsPlayer(this.guid) then
     this.icon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
     SetRaidTargetIconTexture(this.icon, GetRaidTargetIndex(this.guid))
     this.icon:Show()
@@ -183,8 +197,8 @@ ui.BarUpdate = function(elapsed)
     this.icon:Hide()
   end
 
-  -- update target indicator
-  if UnitExists("target") and UnitIsUnit("target", this.guid) then
+  -- update target indicator (not for test units)
+  if this.guid ~= "test_unit_preview" and UnitExists("target") and UnitIsUnit("target", this.guid) then
     this.target_left:Show()
     this.target_right:Show()
   else
@@ -194,6 +208,8 @@ ui.BarUpdate = function(elapsed)
 end
 
 ui.BarClick = function()
+  -- Don't target test units
+  if this.guid == "test_unit_preview" then return end
   TargetUnit(this.guid)
 end
 
@@ -215,30 +231,22 @@ ui.CreateBar = function(parent, guid, config)
   frame:SetScript("OnLeave", ui.BarLeave)
   frame:SetScript("OnUpdate", ui.BarUpdate)
 
-  -- create health bar
-  local bar = CreateFrame("StatusBar", nil, frame)
-  -- Apply statusbar texture from config (user's choice)
-  local texture = config.bar_texture or "Interface\\TargetingFrame\\UI-StatusBar"
-  if texture and texture ~= "" then
-    bar:SetStatusBarTexture(texture)
+  -- create health bar using widget factory (replaces 40+ lines of repeated code)
+  local bar = ShaguScan.factory.CreateStatusBarWithConfig(frame, config, guid)
+  -- Handle test units differently
+  if guid == "test_unit_preview" then
+    bar:SetMinMaxValues(0, 100)
+    bar:SetValue(75)
+  else
+    bar:SetMinMaxValues(0, UnitHealthMax(guid) or 100)
+    bar:SetValue(UnitHealth(guid) or 100)
   end
-  -- Set initial color and health
+  bar:SetAllPoints()
+  
+  -- Set initial color based on unit
   local hex, r, g, b, a = utils.GetBarColor(guid, config)
   bar:SetStatusBarColor(r, g, b, config.bar_alpha or 1)
-  -- Also set the status bar frame alpha for better transparency in WoW 1.12
-  bar:SetAlpha(config.bar_alpha or 1)
-  bar:SetMinMaxValues(0, UnitHealthMax(guid) or 100)
-  bar:SetValue(UnitHealth(guid) or 100)
-  bar:SetAllPoints()
   frame.bar = bar
-  
-  -- Create background for the statusbar (shows missing health as red)
-  local bg = bar:CreateTexture(nil, "BACKGROUND")
-  bg:SetAllPoints(bar)
-  bg:SetTexture(texture or "Interface\\TargetingFrame\\UI-StatusBar")
-  -- Use red color for missing health indication
-  bg:SetVertexColor(0.8, 0.1, 0.1, config.background_alpha or 0.8) -- Red background for missing health
-  frame.bar.bg = bg
 
   -- create caption text
   local text = frame.bar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
@@ -267,7 +275,7 @@ ui.CreateBar = function(parent, guid, config)
   -- create health text if enabled
   if config.health_text_enabled then
     local health_text = frame.bar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-      local fontPath = utils.GetFontPathFromName(config.text_font)
+    local fontPath = utils.GetFontPathFromName(config.text_font)
     health_text:SetFont(fontPath, config.text_size, config.text_outline)
     health_text:SetTextColor(config.text_color.r, config.text_color.g, config.text_color.b, config.text_color.a)
     
@@ -343,7 +351,12 @@ ui:SetAllPoints()
 ui:Show()
 
 ui:SetScript("OnUpdate", function()
-  if (this.tick or 1) > GetTime() then return else this.tick = GetTime() + .5 end
+  if (this.tick or 1) > GetTime() then return else this.tick = GetTime() + .1 end
+
+  -- cleanup old GUIDs for better performance
+  if ShaguScan.core and ShaguScan.core.cleanup then
+    ShaguScan.core.cleanup()
+  end
 
   -- remove old leftover frames
   for caption, root in pairs(ui.frames) do

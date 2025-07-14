@@ -1,0 +1,58 @@
+# Build directories
+build/
+releases/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE/Editor files
+.vscode/settings.json.user
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# WoW addon specific
+SavedVariables/
+WTF/
+Cache/
+Logs/
+Screenshots/
+
+# Backup files
+*.bak
+*.backup
+
+# Local development files
+local_*
+test_*
+
+# Reference repositories (for development study only)
+pfui-reference/
+
+# Node.js (if using for development tools)
+node_modules/
+package-lock.json
+
+# Development configuration files
+.editorconfig
+mcp.json
+.luacheckrc
+*.json
+!package.json
+
+# Development documentation (exclude from releases)
+*.md
+!README.md
+!LICENSE
