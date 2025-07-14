@@ -1,3 +1,7 @@
+# Build directories
+build/
+releases/
+
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -22,6 +26,9 @@ Thumbs.db
 # WoW addon specific
 SavedVariables/
 WTF/
+Cache/
+Logs/
+Screenshots/
 
 # Backup files
 *.bak
@@ -34,12 +41,18 @@ test_*
 # Reference repositories (for development study only)
 pfui-reference/
 
+# Node.js (if using for development tools)
 node_modules/
+package-lock.json
+
+# Development configuration files
 .editorconfig
 mcp.json
-
-*.md
-!README.md
-
 .luacheckrc
 *.json
+!package.json
+
+# Development documentation (exclude from releases)
+*.md
+!README.md
+!LICENSE

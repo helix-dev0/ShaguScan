@@ -1,0 +1,172 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Extract version from tag
+      id: version
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION=$(grep "^## Version:" ShaguScan.toc | cut -d' ' -f3)
+          if [ -z "$VERSION" ]; then
+            VERSION="dev-$(date +%Y%m%d-%H%M%S)"
+          fi
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+        
+    - name: Update TOC version
+      run: |
+        # Update version in TOC file if it's a tagged release
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          sed -i "s/^## Version:.*/## Version: ${{ steps.version.outputs.version }}/" ShaguScan.toc
+        fi
+        
+    - name: Build addon package
+      run: |
+        # Configuration
+        ADDON_NAME="ShaguScan"
+        BUILD_DIR="build"
+        PACKAGE_DIR="$BUILD_DIR/$ADDON_NAME"
+        VERSION="${{ steps.version.outputs.version }}"
+        
+        echo "Building $ADDON_NAME version $VERSION"
+        
+        # Create build directory structure
+        mkdir -p "$PACKAGE_DIR"
+        
+        # Copy addon files
+        cp "ShaguScan.toc" "$PACKAGE_DIR/"
+        cp "ShaguScan.lua" "$PACKAGE_DIR/"
+        cp "LICENSE" "$PACKAGE_DIR/"
+        
+        # Copy directory structures
+        cp -r "init/" "$PACKAGE_DIR/"
+        cp -r "core/" "$PACKAGE_DIR/"
+        cp -r "api/" "$PACKAGE_DIR/"
+        cp -r "modules/" "$PACKAGE_DIR/"
+        cp -r "fonts/" "$PACKAGE_DIR/"
+        cp -r "img/" "$PACKAGE_DIR/"
+        
+        # Include user documentation
+        if [ -f "README.md" ]; then
+          cp "README.md" "$PACKAGE_DIR/"
+        fi
+        
+        # Clean development files
+        find "$PACKAGE_DIR" -name "*.bak" -delete
+        find "$PACKAGE_DIR" -name "*.tmp" -delete
+        find "$PACKAGE_DIR" -name ".DS_Store" -delete
+        
+        # Remove development documentation and files
+        rm -rf "$PACKAGE_DIR"/pfui-reference 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/node_modules 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/.git* 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/.vscode 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/screenshots 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/mcp.json 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/package*.json 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/build-addon.sh 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/*_PLAN.md 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/*_ANALYSIS.md 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/*_REFERENCE.md 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/CLAUDE.md 2>/dev/null || true
+        rm -rf "$PACKAGE_DIR"/.github 2>/dev/null || true
+        
+        # Verify essential files exist
+        ESSENTIAL_FILES=("ShaguScan.toc" "ShaguScan.lua" "init" "core" "api" "modules")
+        for file in "${ESSENTIAL_FILES[@]}"; do
+          if [ ! -e "$PACKAGE_DIR/$file" ]; then
+            echo "ERROR: Essential file/directory missing: $file"
+            exit 1
+          fi
+        done
+        
+        # Display package contents
+        echo "Package contents:"
+        find "$PACKAGE_DIR" -type f | sort | sed 's|^'$PACKAGE_DIR'/||' | sed 's/^/  /'
+        
+        # Create zip archive
+        ARCHIVE_NAME="$ADDON_NAME-$VERSION.zip"
+        echo "Creating archive: $ARCHIVE_NAME"
+        
+        cd "$BUILD_DIR"
+        zip -r "../$ARCHIVE_NAME" "$ADDON_NAME"
+        cd ..
+        
+        # Set output for next step
+        echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+        echo "package_path=$PACKAGE_DIR" >> $GITHUB_OUTPUT
+        
+      id: build
+      
+    - name: Generate release notes
+      run: |
+        cat > release_notes.md << 'EOF'
+        # ShaguScan v${{ steps.version.outputs.version }}
+        
+        ## Installation Instructions
+        
+        1. Download the `ShaguScan-${{ steps.version.outputs.version }}.zip` file below
+        2. Extract the archive to your World of Warcraft AddOns directory:
+           - **Windows**: `World of Warcraft\Interface\AddOns\`
+           - **macOS**: `World of Warcraft/Interface/AddOns/`
+        3. The addon should appear as: `Interface/AddOns/ShaguScan/`
+        4. Restart World of Warcraft
+        5. Use `/scan` command to open the configuration panel
+        
+        ## Requirements
+        
+        - World of Warcraft 1.12.1 (Vanilla)
+        - SuperWoW (required for GUID functionality)
+        
+        ## Commands
+        
+        - `/scan` - Open main configuration panel
+        - `/sscan` or `/shaguscan` - Alternative commands
+        
+        ## Features
+        
+        - Scan for nearby units with custom filters
+        - Configurable health bars and visual customization
+        - Multiple scan windows with independent settings
+        - pfUI-compatible styling and themes
+        - SuperWoW integration for enhanced performance
+        
+        ## Support
+        
+        For issues and feature requests, please visit the [GitHub repository](https://github.com/helix-dev0/ShaguScan).
+        EOF
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: ShaguScan v${{ steps.version.outputs.version }}
+        body_path: release_notes.md
+        files: |
+          ShaguScan-${{ steps.version.outputs.version }}.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ShaguScan-${{ steps.version.outputs.version }}
+        path: ${{ steps.build.outputs.package_path }}
+        retention-days: 30
