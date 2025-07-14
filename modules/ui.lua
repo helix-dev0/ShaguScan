@@ -2,7 +2,7 @@ if ShaguScan.disabled then return end
 
 local utils = ShaguScan.utils
 local filter = ShaguScan.filter
-local settings = ShaguScan.settings
+-- Note: settings is loaded after ui, so we access it dynamically
 
 local ui = CreateFrame("Frame", nil, UIParent)
 
@@ -83,7 +83,7 @@ ui.CreateRoot = function(parent, caption)
   frame.settings.tex:SetAlpha(.5)
 
   frame.settings:SetScript("OnClick", function()
-    settings.OpenConfig(this:GetParent().id)
+    ShaguScan.dialogs.OpenConfig(this:GetParent().id)
   end)
 
   return frame
